@@ -37,14 +37,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install "flet[cli]==0.85.2"
 
-    - name: 7. Fletアプリ環境の初期化（迷子防止の特効薬）
+    - name: 7. Fletアプリ環境の初期化（成功済み）
       run: |
-        # 最新仕様に合わせて、ロボットの作業場所にアプリ環境を正しく初期化します
         flet create .
 
-    - name: 8. Flet APKのビルド実行
+    - name: 8. Flet APKのビルド実行（エラー原因の文字を削除）
       run: |
-        flet build apk --no-interactive
+        # エラーになっていた --no-interactive を完全に消去しました
+        flet build apk
 
     - name: 9. 完成したAPKファイルを保存
       uses: actions/upload-artifact@v4
