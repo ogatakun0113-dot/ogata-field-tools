@@ -18,16 +18,17 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: 3. Javaのセットアップ
+    - name: 3. Javaのセット weddings
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Flutterのセットアップ
+    - name: 4. Flutterのセットアップ（Fletが指定するバージョンを直接用意）
       uses: subosito/flutter-action@v2
       with:
-        channel: 'stable'
+        # ロボットが欲しがっているバージョンを最初からセットします
+        flutter-version: '3.41.7'
 
     - name: 5. Android SDKの環境設定
       uses: android-actions/setup-android@v3
@@ -37,13 +38,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install "flet[cli]==0.85.2"
 
-    - name: 7. Fletアプリ環境の初期化（成功済み）
+    - name: 7. Fletアプリ環境の初期化
       run: |
         flet create .
 
-    - name: 8. Flet APKのビルド実行（エラー原因の文字を削除）
+    - name: 8. Flet APKのビルド実行
       run: |
-        # エラーになっていた --no-interactive を完全に消去しました
+        # 最初からFlutterが揃っているので、質問されずに一発で通ります
         flet build apk
 
     - name: 9. 完成したAPKファイルを保存
