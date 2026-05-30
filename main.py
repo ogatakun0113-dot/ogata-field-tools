@@ -93,7 +93,7 @@ def main(page: ft.Page):
         lbl_vswr_result
     ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=15, visible=False) # 最初は非表示
 
-    # 最新Flet(0.85+)でエラーが出ない安全な切り替えボタン（コンテナ）の仕組み
+    # 安全な画面切り替えの仕組み
     def navigate(e):
         if e.control.selected_index == 0:
             view_db.visible = True
@@ -103,7 +103,7 @@ def main(page: ft.Page):
             view_vswr.visible = True
         page.update()
 
-    # 画面下部に配置するナビゲーションバー（最新仕様）
+    # 画面下部に配置するナビゲーションバー
     page.navigation_bar = ft.NavigationBar(
         selected_index=0,
         on_change=navigate,
@@ -116,5 +116,5 @@ def main(page: ft.Page):
     # 画面に部品を登録
     page.add(header, view_db, view_vswr)
 
-# アプリの起動（最新の推奨される書き方に統一）
+# アプリの起動
 ft.app(target=main)
