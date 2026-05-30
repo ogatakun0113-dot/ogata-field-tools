@@ -10,39 +10,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: リポジトリのコードを取得
+    - name: 1. リポジトリのコードを取得
       uses: actions/checkout@v4
 
-    - name: Pythonのセットアップ
+    - name: 2. Pythonのセットアップ
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.10'
 
-    - name: Javaのセットアップ（ビルドに必須）
+    - name: 3. Javaのセットアップ
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Flutterのセットアップ（Flet公式推奨バージョンを指定）
+    - name: 4. Flutterのセットアップ
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.22.2' # 質問が出ない安定バージョンを固定
         channel: 'stable'
 
-    - name: Android SDKの環境設定
-      uses: android-actions/setup-android@v3
-
-    - name: 必要なPythonパッケージのインストール
+    - name: 5. 必要なPythonパッケージのインストール
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Flet APKのビルド実行
+    - name: 6. Flet APKのビルド実行
       run: |
-        flet build apk --no-interactive
+        flet build apk
 
-    - name: 完成したAPKファイルを保存
+    - name: 7. 完成したAPKファイルを保存
       uses: actions/upload-artifact@v4
       with:
         name: ogata-field-tools-apk
