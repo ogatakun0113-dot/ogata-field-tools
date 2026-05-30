@@ -24,16 +24,25 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. 必要なパッケージと工具のインストール
+    - name: 4. Flutterのセットアップ
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+
+    - name: 5. Android SDKの環境設定
+      uses: android-actions/setup-android@v3
+
+    - name: 6. 必要なパッケージとビルド工具のインストール
       run: |
         python -m pip install --upgrade pip
         pip install "flet[cli]==0.85.2"
 
-    - name: 5. Flet APKのビルド実行
+    - name: 7. Flet APKのビルド実行（場所を正確に指定）
       run: |
-        python -m flet build apk --no-interactive
+        # 最後に「 . 」をつけることで、いまの場所にあるプログラムを指定します
+        python -m flet build apk --no-interactive .
 
-    - name: 6. 完成したAPKファイルを保存
+    - name: 8. 完成したAPKファイルを保存
       uses: actions/upload-artifact@v4
       with:
         name: ogata-field-tools-apk
