@@ -10,33 +10,40 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: リポジトリのコードを取得
-        uses: actions/checkout@v4
+    - name: リポジトリのコードを取得
+      uses: actions/checkout@v4
 
-      - name: Pythonのセットアップ
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+    - name: Pythonのセットアップ
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
 
-      - name: Flutterのセットアップ
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+    - name: Javaのセットアップ（ビルドに必須）
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: Android SDKの環境設定
-        uses: android-actions/setup-android@v3
+    - name: Flutterのセットアップ（Flet公式推奨バージョンを指定）
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.2' # 質問が出ない安定バージョンを固定
+        channel: 'stable'
 
-      - name: 必要なPythonパッケージのインストール
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Android SDKの環境設定
+      uses: android-actions/setup-android@v3
 
-      - name: Flet APKのビルド実行
-        run: |
-          flet build apk
+    - name: 必要なPythonパッケージのインストール
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: 完成したAPKファイルを保存
-        uses: actions/upload-artifact@v4
-        with:
-          name: ogata-field-tools-apk
-          path: build/apk/*.apk
+    - name: Flet APKのビルド実行
+      run: |
+        flet build apk --no-interactive
+
+    - name: 完成したAPKファイルを保存
+      uses: actions/upload-artifact@v4
+      with:
+        name: ogata-field-tools-apk
+        path: build/apk/*.apk
