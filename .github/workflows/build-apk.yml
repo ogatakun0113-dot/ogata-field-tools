@@ -37,10 +37,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install "flet[cli]==0.85.2"
 
-    - name: 7. Flet APKのビルド実行（場所を正確に指定）
+    - name: 7. Flet APKのビルド実行（プログラムファイルを直接指定）
       run: |
-        # 最後に「 . 」をつけることで、いまの場所にあるプログラムを指定します
-        python -m flet build apk --no-interactive .
+        # メインのファイルを直接指名することで、ロボットの迷子を防ぎます
+        python -m flet build apk --no-interactive main.py
 
     - name: 8. 完成したAPKファイルを保存
       uses: actions/upload-artifact@v4
