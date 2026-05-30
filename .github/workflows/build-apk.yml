@@ -1,0 +1,42 @@
+name: Build Flet Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # 手動ビルドボタン
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリのコードを取得
+        uses: actions/checkout@v4
+
+      - name: Pythonのセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Flutterのセットアップ
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Android SDKの環境設定
+        uses: android-actions/setup-android@v3
+
+      - name: 必要なPythonパッケージのインストール
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Flet APKのビルド実行
+        run: |
+          flet build apk
+
+      - name: 完成したAPKファイルを保存
+        uses: actions/upload-artifact@v4
+        with:
+          name: ogata-field-tools-apk
+          path: build/apk/*.apk
