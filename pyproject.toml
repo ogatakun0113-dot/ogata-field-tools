@@ -1,0 +1,2 @@
+[tool.flet]
+main_script = "main.py"
