@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1b1d20">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>総合換算ツール電卓 V1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+/* Layout: one handheld calculator body (front = calculator, back = 詳細設定) centered in the viewport; flips on its Y axis. Single dark look by design. */
+:root{
+  color-scheme:dark;
+  --room:#0c0d0f;
+  --case:#1b1d20;
+  --case-hi:#26292d;
+  --lcd:#a7bd9f;
+  --lcd-ink:#1d2a1b;
+  --lcd-dim:#566b50;
+  --lcd-inv:#2a3a27;
+  --key-light:#c8cace;
+  --key-light-hi:#e3e5e8;
+  --key-light-ink:#15171a;
+  --key-dark:#303337;
+  --key-dark-hi:#43474c;
+  --key-dark-ink:#f3f4f5;
+  --alt:#e7b84a;
+  --alt-ink:#1a1408;
+  --shift:#2e8a76;
+  --shift-ink:#eafaf6;
+  --clr:#e2463d;
+  --clr-ink:#fff4f2;
+  --label:#e9a83a;
+  --sub:#35b49b;
+  --fg:#e8eaec;
+  --muted:#8d949b;
+  --line:#33373c;
+  --ok:#5fd18d;
+  --warn:#ff8a65;
+  --f-ui:"Hiragino Sans","Yu Gothic UI","Meiryo","Noto Sans JP",system-ui,sans-serif;
+  --f-lcd:"DejaVu Sans Mono","Consolas","Roboto Mono","Menlo",ui-monospace,monospace;
+  --f-key:"Arial Rounded MT Bold","Helvetica Neue","Arial",var(--f-ui);
+}
+html,body{height:100%;height:100dvh}
+body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;overflow:hidden;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+*{box-sizing:border-box}
+.stage{height:100%;display:flex;justify-content:center;perspective:1600px}
+.flipper{position:relative;width:100%;max-width:460px;height:100%;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,.1,.2,1)}
+.flipper.flipped{transform:rotateY(180deg)}
+@media (prefers-reduced-motion:reduce){.flipper{transition:none}}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;
+  background:linear-gradient(180deg,var(--case-hi),var(--case) 18%);box-shadow:0 0 0 1px var(--line),0 20px 50px rgba(0,0,0,.55);overflow:hidden}
+.front{display:flex;flex-direction:column;padding:8px 6px 8px}
+.back{transform:rotateY(180deg);display:flex;flex-direction:column}
+
+/* ---- status strip ---- */
+.status{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:2px 8px 6px;font:600 clamp(11px,1.7vh,14px)/1 var(--f-ui);color:#fff;letter-spacing:.02em}
+.status button{all:unset;cursor:pointer;padding:3px 4px;border-radius:4px;white-space:nowrap}
+.status button:focus-visible{outline:2px solid var(--sub)}
+.brand{font:700 10px/1 var(--f-ui);color:var(--muted);letter-spacing:.12em}
+
+/* ---- LCD ---- */
+.lcd{flex:1 1 0;min-height:110px;background:var(--lcd);color:var(--lcd-ink);border-radius:12px;margin:0 2px 8px;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.35),inset 0 0 0 1px rgba(0,0,0,.25);display:flex;flex-direction:column;overflow:hidden;font-family:var(--f-lcd)}
+.lcd-top{display:flex;gap:8px;align-items:center;padding:6px 10px 2px;font:700 11px/1.2 var(--f-ui);color:var(--lcd-dim);letter-spacing:.06em}
+.lcd-top .ind{padding:0 4px;border-radius:3px}
+.lcd-top .ind.on{background:var(--lcd-inv);color:var(--lcd)}
+.lcd-top .grow{flex:1}
+.lcd-x{all:unset;cursor:pointer;font:700 12px/1 var(--f-ui);color:var(--lcd-ink);padding:2px 6px;border:1px solid var(--lcd-dim);border-radius:4px}
+.lcd-body{flex:1;overflow-y:auto;padding:2px 10px 8px;display:flex;flex-direction:column}
+.entry{font-size:clamp(18px,3vh,24px);line-height:1.3;word-break:break-all;min-height:1.3em}
+.cursor{display:inline-block;width:2px;height:1.05em;background:#2257c9;vertical-align:-3px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor{animation:none}}
+.result{margin-top:auto;text-align:right;font-size:clamp(30px,6vh,46px);line-height:1.15;font-weight:500;word-break:break-all;font-variant-numeric:tabular-nums}
+.result.preview{color:var(--lcd-dim);font-size:clamp(20px,3.6vh,28px)}
+.hint{font:500 12px/1.6 var(--f-ui);color:var(--lcd-dim);margin-top:6px}
+.hint b{color:var(--lcd-ink)}
+.rows{display:flex;flex-direction:column;margin-top:4px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 4px;border-bottom:1px dashed rgba(29,42,27,.25);font-variant-numeric:tabular-nums;cursor:pointer;border-radius:3px}
+.row .l{font:600 12px/1.3 var(--f-ui);white-space:nowrap}
+.row .v{font-size:clamp(15px,2.4vh,19px);text-align:right;word-break:break-all}
+.row.me{background:var(--lcd-inv);color:var(--lcd)}
+.row.strong .v{font-weight:700;font-size:clamp(18px,3vh,24px)}
+.row.static{cursor:default}
+.convin{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.convin .u{font:700 14px/1 var(--f-ui)}
+.note{font:500 11px/1.5 var(--f-ui);color:var(--lcd-dim);margin-top:6px}
+.warn{font:700 12px/1.4 var(--f-ui);color:#8a1c0f;margin-top:4px}
+.fld{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:3px 4px;border-radius:3px;cursor:pointer}
+.fld .l{font:600 12px/1.3 var(--f-ui);white-space:nowrap}
+.fld .v{font-size:clamp(15px,2.4vh,19px);text-align:right;word-break:break-all}
+.fld.act{background:var(--lcd-inv);color:var(--lcd)}
+.fld .opt::before{content:"◀ ";opacity:.55;font-size:.7em}
+.fld .opt::after{content:" ▶";opacity:.55;font-size:.7em}
+.sw{display:inline-block;width:.8em;height:.8em;border:1px solid rgba(0,0,0,.5);margin-right:4px;vertical-align:-1px}
+.sep{border-top:2px solid rgba(29,42,27,.45);margin:6px 0 2px}
+.ttl{font:700 14px/1.3 var(--f-ui);margin:2px 0 4px}
+.list .row .l{font-size:14px}
+.list .row .v{font:600 12px/1.3 var(--f-ui)}
+
+/* ---- keys ---- */
+.keys{display:grid;grid-template-columns:repeat(5,1fr);column-gap:6px;row-gap:0;padding:0 2px}
+.kc{display:flex;flex-direction:column;min-width:0}
+.kl{height:clamp(13px,2vh,17px);font:700 clamp(10px,1.55vh,13px)/1 var(--f-key);color:var(--label);text-align:center;white-space:nowrap;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px}
+.kl.none{height:5px}
+.k{position:relative;display:flex;align-items:center;justify-content:center;border:0;border-radius:6px;cursor:pointer;font-family:var(--f-key);
+  height:clamp(30px,4.6vh,44px);font-size:clamp(14px,2.4vh,20px);font-weight:700;padding:0 2px;white-space:nowrap;touch-action:manipulation;
+  box-shadow:0 2px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.18)}
+.k:active,.k.down{transform:translateY(2px);box-shadow:0 0 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.1);filter:brightness(.92)}
+.k:focus-visible{outline:2px solid var(--sub);outline-offset:1px}
+.k.lt{background:linear-gradient(180deg,var(--key-light-hi),var(--key-light));color:var(--key-light-ink)}
+.k.dk{background:linear-gradient(180deg,var(--key-dark-hi),var(--key-dark));color:var(--key-dark-ink);height:clamp(38px,6.2vh,58px);font-size:clamp(22px,3.9vh,34px);font-weight:400;font-family:"Helvetica Neue",Arial,var(--f-ui)}
+.k.dk.op{font-size:clamp(20px,3.6vh,30px)}
+.k.dk.sm{font-size:clamp(16px,2.8vh,24px)}
+.k.alt{background:var(--alt);color:var(--alt-ink)}
+.k.sh{background:var(--shift);color:var(--shift-ink)}
+.k.sh.on{box-shadow:0 0 0 2px #fff inset,0 2px 0 rgba(0,0,0,.55)}
+.k.cl{background:var(--clr);color:var(--clr-ink)}
+.k.jp{font-size:clamp(12px,2vh,16px)}
+.k .tr{position:absolute;top:3px;right:6px;font:400 clamp(10px,1.7vh,15px)/1 var(--f-key);color:var(--label)}
+.k .br{position:absolute;bottom:3px;right:7px;font:400 clamp(10px,1.7vh,15px)/1 var(--f-key);color:var(--sub)}
+.grpgap{grid-column:1/-1;height:4px}
+.dkrow{margin-top:6px}
+
+/* ---- back side ---- */
+.bk-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--line)}
+.bk-head h2{margin:0;font:700 17px/1.2 var(--f-ui);letter-spacing:.04em}
+.bk-head small{display:block;color:var(--muted);font:500 11px/1.4 var(--f-ui);letter-spacing:.1em}
+.btn{all:unset;cursor:pointer;padding:9px 14px;border-radius:8px;font:700 13px/1 var(--f-ui);background:var(--alt);color:var(--alt-ink);text-align:center}
+.btn.ghost{background:var(--key-dark);color:var(--fg)}
+.btn.danger{background:var(--clr);color:var(--clr-ink)}
+.btn:focus-visible{outline:2px solid var(--sub)}
+.bk-body{flex:1;overflow-y:auto;padding:6px 16px 20px;user-select:text;-webkit-user-select:text}
+.sec{padding:12px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:700 12px/1.2 var(--f-ui);color:var(--label);letter-spacing:.12em}
+.fr{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fr>label,.fr>span{font:500 13px/1.4 var(--f-ui);color:var(--fg)}
+.seg{display:flex;background:var(--key-dark);border-radius:8px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{all:unset;cursor:pointer;padding:7px 10px;border-radius:6px;font:600 12px/1 var(--f-ui);color:var(--muted)}
+.seg button.on{background:var(--key-light);color:var(--key-light-ink)}
+.seg button:focus-visible{outline:2px solid var(--sub)}
+.num{width:84px;padding:7px 8px;border-radius:7px;border:1px solid var(--line);background:#111315;color:var(--fg);font:500 14px/1 var(--f-lcd);text-align:right}
+.num:disabled{opacity:.45}
+.num:focus{outline:2px solid var(--sub);outline-offset:0}
+.grid3{display:grid;grid-template-columns:minmax(0,1.5fr) 1fr 1fr;gap:6px 8px;align-items:center;font:500 12px/1.3 var(--f-ui)}
+.grid3 .h{color:var(--muted);font-size:11px}
+.grid3 .num{width:100%}
+.tg{all:unset;cursor:pointer;width:46px;height:26px;border-radius:13px;background:var(--key-dark);position:relative}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--muted);transition:left .15s}
+.tg.on{background:var(--shift)}
+.tg.on::after{left:23px;background:#fff}
+.tg:focus-visible{outline:2px solid var(--sub)}
+.help{font:400 12px/1.7 var(--f-ui);color:var(--muted)}
+.help b{color:var(--fg)}
+.plate{margin-top:18px;padding:12px;border:1px solid var(--line);border-radius:8px;font:500 11px/1.6 var(--f-ui);color:var(--muted);text-align:center;letter-spacing:.06em}
+.confirm{font:600 12px/1.4 var(--f-ui);color:var(--warn)}
+</style>
+</head>
+<body>
+
+<div class="stage">
+ <div class="flipper" id="flipper">
+  <!-- ===== FRONT ===== -->
+  <section class="face front" id="front" aria-label="電卓">
+   <div class="status" id="status"><span>50Ω</span><span>DEC</span><span>1-5V</span><span>目盛 0.0〜5.0</span></div>
+   <div class="lcd" id="lcd" role="status" aria-live="polite"><div class="lcd-body"><div class="hint" style="color:var(--lcd-ink);font-size:14px;line-height:1.7"><b>このアプリでは計算機能が動きません。</b><br>ファイルビューアーやプレビュー画面ではプログラム(JavaScript)が止められています。<br>右上の「︙」→「アプリで開く」等から <b>Chrome</b> を選んで開いてください。</div></div></div>
+   <div class="keys" id="keys"><div class="kc"><div class="kl"></div><button type="button" class="k alt" data-k="tool" id="key-0-tool" aria-label="TOOL">TOOL</button></div><div class="kc"><div class="kl"></div><button type="button" class="k sh" data-k="shift" id="key-0-shift" aria-label="SHIFT">SHIFT</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="set" id="key-0-set" aria-label="⚙ 設定">⚙ 設定</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="bs" id="key-0-bs" aria-label="⌫ BS">⌫ BS</button></div><div class="kc"><div class="kl">AC</div><button type="button" class="k cl" data-k="clr" id="key-0-clr" aria-label="CLR / SHIFT: AC">CLR</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="pm" id="key-1-pm" aria-label="(−)">(−)</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="up" id="key-1-up" aria-label="▲">▲</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="down" id="key-1-down" aria-label="▼">▼</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="left" id="key-1-left" aria-label="◀">◀</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="right" id="key-1-right" aria-label="▶">▶</button></div><div class="kc"><div class="kl">50/75Ω</div><button type="button" class="k lt" data-k="dBm" id="key-2-dBm" aria-label="dBm / SHIFT: 50/75Ω">dBm</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="dBuV" id="key-2-dBuV" aria-label="dBμV">dBμV</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="W" id="key-2-W" aria-label="W">W</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="mW" id="key-2-mW" aria-label="mW">mW</button></div><div class="kc"><div class="kl">波長</div><button type="button" class="k lt jp" data-k="vswr" id="key-2-vswr" aria-label="VSWR / SHIFT: 波長">VSWR</button></div><div class="kc"><div class="kl">種別切替</div><button type="button" class="k lt jp" data-k="TX" id="key-3-TX" aria-label="伝送値 / SHIFT: 種別切替">伝送値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="IND" id="key-3-IND" aria-label="指示値">指示値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="PCT" id="key-3-PCT" aria-label="割合%">割合%</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="MA" id="key-3-MA" aria-label="電流mA">電流mA</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="V" id="key-3-V" aria-label="電圧V">電圧V</button></div><div class="kc"><div class="kl">xʸ</div><button type="button" class="k lt" data-k="sq" id="key-4-sq" aria-label="x² / SHIFT: xʸ">x²</button></div><div class="kc"><div class="kl">∛</div><button type="button" class="k lt" data-k="sqrt" id="key-4-sqrt" aria-label="√ / SHIFT: ∛">√</button></div><div class="kc"><div class="kl">ln</div><button type="button" class="k lt" data-k="log" id="key-4-log" aria-label="log / SHIFT: ln">log</button></div><div class="kc"><div class="kl">eˣ</div><button type="button" class="k lt" data-k="pow10" id="key-4-pow10" aria-label="10ˣ / SHIFT: eˣ">10ˣ</button></div><div class="kc"><div class="kl">π</div><button type="button" class="k lt" data-k="inv" id="key-4-inv" aria-label="x⁻¹ / SHIFT: π">x⁻¹</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="7" id="key-5-7" aria-label="7">7</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="8" id="key-5-8" aria-label="8">8</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="9" id="key-5-9" aria-label="9">9</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="(" id="key-5-_" aria-label="(">(</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k=")" id="key-5-_" aria-label=")">)</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="4" id="key-6-4" aria-label="4">4<span class="br">D</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="5" id="key-6-5" aria-label="5">5<span class="br">E</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="6" id="key-6-6" aria-label="6">6<span class="br">F</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="×" id="key-6-_" aria-label="×">×</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="÷" id="key-6-_" aria-label="÷">÷</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="1" id="key-7-1" aria-label="1">1<span class="br">A</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="2" id="key-7-2" aria-label="2">2<span class="br">B</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="3" id="key-7-3" aria-label="3">3<span class="br">C</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="+" id="key-7-_" aria-label="+">+</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="−" id="key-7-_" aria-label="−">−</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="0" id="key-8-0" aria-label="0">0</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="." id="key-8-_" aria-label="・">・</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="exp" id="key-8-exp" aria-label="Exp">Exp</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="ans" id="key-8-ans" aria-label="Ans">Ans</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="=" id="key-8-_" aria-label="=">=</button></div></div>
+  </section>
+
+  <!-- ===== BACK (詳細設定) ===== -->
+  <section class="face back" id="back" aria-label="詳細設定">
+   <div class="bk-head">
+    <div><h2>詳細設定</h2><small>BACK PANEL ・ 自動保存</small></div>
+    <button class="btn" id="bkClose" type="button">電卓に戻る</button>
+   </div>
+   <div class="bk-body" id="bkBody"></div>
+  </section>
+ </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= 定数 ================= */
+var LS_KEY='sogoKansanCalcV1';
+var DEF_SET={imp:50,tx:'dec',scale:{dec:[0,5],hex1:[0,10],hex2:[0,10]},ma:[4,20],vmode:'15',r:250,digits:'auto',vib:true,restore:true};
+var TXT={
+  dec:{name:'DEC 200-999',short:'DEC',min:200,div:800,hex:false},
+  hex1:{name:'HEX 990-FD0',short:'HEX1',min:0x990,div:0xFD0-0x990,hex:true},
+  hex2:{name:'HEX 3200-FA00 (クラウドTM)',short:'HEX2',min:0x3200,div:0xFA00-0x3200,hex:true}
+};
+var TXORDER=['dec','hex1','hex2'];
+var RF=['dBm','dBuV','W','mW'], TX=['TX','IND','PCT','MA','V'];
+var UNAME={dBm:'dBm',dBuV:'dBμV',W:'W',mW:'mW',TX:'伝送値',IND:'指示値',PCT:'割合 %',MA:'電流 mA',V:'電圧 V'};
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+/* ================= 状態 ================= */
+var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc'};
+
+function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
+function load(){
+  try{
+    var raw=localStorage.getItem(LS_KEY); if(!raw) return;
+    var o=JSON.parse(raw); if(!o||!o.set) return;
+    var set=Object.assign(clone(DEF_SET),o.set); set.scale=Object.assign(clone(DEF_SET.scale),o.set.scale||{});
+    if(set.restore===false){S.set=set;S.hist=o.hist||[];S.tv=o.tv||{};return;}
+    Object.keys(S).forEach(function(k){ if(o[k]!==undefined) S[k]=o[k]; });
+    S.set=set; S.shift=false; if(S.mode==='list') S.mode=S.prev||'calc';
+    if(S.mode==='tool' && !TOOLS[S.tool]) S.mode='calc';
+  }catch(e){}
+}
+
+/* ================= 数式パーサ ================= */
+var FUNCS=['log(','ln(','√(','∛(','Ans','π','ℯ'];
+function tokenize(s){
+  var t=[],i=0;
+  while(i<s.length){
+    var c=s[i];
+    if(/[0-9.]/.test(c)){
+      var m=s.slice(i).match(/^(\d+\.?\d*|\.\d+)(ᴇ[-−]?\d+)?/);
+      if(!m) throw 'syn';
+      t.push({n:parseFloat(m[0].replace('ᴇ','e').replace('−','-'))}); i+=m[0].length; continue;
+    }
+    var hit=null;
+    for(var j=0;j<FUNCS.length;j++){ if(s.substr(i,FUNCS[j].length)===FUNCS[j]){hit=FUNCS[j];break;} }
+    if(hit){t.push({f:hit});i+=hit.length;continue;}
+    if(s.substr(i,2)==='⁻¹'){t.push({o:'⁻¹'});i+=2;continue;}
+    if('+−×÷^()-²'.indexOf(c)>=0){t.push({o:c});i++;continue;}
+    throw 'syn';
+  }
+  return t;
+}
+function evalExpr(s,ans){
+  if(s==null) return NaN;
+  s=String(s).trim(); if(!s) return NaN;
+  var t; try{t=tokenize(s);}catch(e){return NaN;}
+  var p=0;
+  function pk(){return t[p];}
+  function isO(x,o){return x&&x.o===o;}
+  function startsPrimary(x){return x&&(x.n!==undefined||x.f||isO(x,'('));}
+  function expr(){var v=term();while(pk()&&(isO(pk(),'+')||isO(pk(),'−'))){var o=t[p++].o;var r=term();v=o==='+'?v+r:v-r;}return v;}
+  function term(){var v=unary();for(;;){var x=pk();if(isO(x,'×')){p++;v*=unary();}else if(isO(x,'÷')){p++;v/=unary();}else if(startsPrimary(x)){v*=unary();}else break;}return v;}
+  function unary(){var x=pk();if(isO(x,'-')||isO(x,'−')){p++;return -unary();}if(isO(x,'+')){p++;return unary();}return power();}
+  function power(){var b=postfix();if(isO(pk(),'^')){p++;var e=unary();return Math.pow(b,e);}return b;}
+  function postfix(){var v=primary();for(;;){var x=pk();if(isO(x,'²')){p++;v=v*v;}else if(isO(x,'⁻¹')){p++;v=1/v;}else break;}return v;}
+  function group(){var v=expr();if(isO(pk(),')'))p++;return v;}
+  function primary(){
+    var x=t[p++]; if(!x) throw 'syn';
+    if(x.n!==undefined) return x.n;
+    if(x.f==='π') return Math.PI;
+    if(x.f==='ℯ') return Math.E;
+    if(x.f==='Ans') return ans!==undefined?ans:S.ans;
+    if(isO(x,'(')) return group();
+    if(x.f==='log(') return Math.log10(group());
+    if(x.f==='ln(') return Math.log(group());
+    if(x.f==='√(') return Math.sqrt(group());
+    if(x.f==='∛(') return Math.cbrt(group());
+    throw 'syn';
+  }
+  try{var v=expr(); if(p<t.length) return NaN; return v;}catch(e){return NaN;}
+}
+
+/* ================= 書式 ================= */
+function fx(x,d){ if(x===null||x===undefined||!isFinite(x)) return '--'; return Number(x).toLocaleString('ja-JP',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmtNum(v){
+  if(isNaN(v)) return 'Syntax ERROR';
+  if(!isFinite(v)) return 'Math ERROR';
+  var d=S.set.digits;
+  if(d!=='auto') return v.toFixed(+d);
+  var a=Math.abs(v);
+  if(a!==0&&(a>=1e10||a<1e-6)){var e=v.toExponential(8).split('e');return String(Number(e[0]))+'×10^'+Number(e[1]);}
+  return String(Number(v.toPrecision(12)));
+}
+function rawNum(v){ if(!isFinite(v)) return ''; var a=Math.abs(v); if(a!==0&&(a>=1e10||a<1e-6)){var e=v.toExponential(8).split('e');return String(Number(e[0]))+'ᴇ'+Number(e[1]);} return String(Number(v.toPrecision(10))); }
+var SIP=[[1e6,'M'],[1e3,'k'],[1,''],[1e-3,'m'],[1e-6,'μ'],[1e-9,'n'],[1e-12,'p'],[1e-15,'f']];
+function si(v,u){
+  if(!isFinite(v)) return '--';
+  if(v===0) return '0 '+u;
+  var a=Math.abs(v);
+  for(var i=0;i<SIP.length;i++){ if(a>=SIP[i][0]*0.99995||i===SIP.length-1){ return (v/SIP[i][0]).toPrecision(5)+' '+SIP[i][1]+u; } }
+}
+function pieces(str){ var out=[],i=0; while(i<str.length){ if(str.substr(i,2)==='⁻¹'){out.push('⁻¹');i+=2;} else {out.push(str[i]);i++;} } return out; }
+
+/* ================= 換算(RF / 伝送値) ================= */
+function off(){return 120+10*Math.log10(S.set.imp/1000);}
+function rfCalc(unit,x){
+  var o=off(),dbm=NaN;
+  if(unit==='dBm') dbm=x; else if(unit==='dBuV') dbm=x-o;
+  else if(unit==='W') dbm=x>0?10*Math.log10(x*1000):NaN;
+  else if(unit==='mW') dbm=x>0?10*Math.log10(x):NaN;
+  var mw=Math.pow(10,dbm/10), w=mw/1000, v=Math.sqrt(w*S.set.imp);
+  return {rows:[
+    {l:'電力 dBm',v:fx(dbm,2)+' dBm',u:'dBm',raw:dbm},
+    {l:'電圧 dBμV',v:fx(dbm+o,2)+' dBμV',u:'dBuV',raw:dbm+o},
+    {l:'電力 W',v:si(w,'W'),u:'W',raw:w},
+    {l:'電力 mW',v:isFinite(mw)?Number(mw.toPrecision(6)).toString()+' mW':'--',u:'mW',raw:mw},
+    {l:'端子電圧 ('+S.set.imp+'Ω)',v:si(v,'V'),u:null}
+  ],note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
+}
+function txCfg(){
+  var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx], ma=S.set.ma;
+  var r=S.set.vmode==='15'?250:(+S.set.r||250);
+  return {t:t,smin:+sc[0],smax:+sc[1],amin:+ma[0],amax:+ma[1],r:r,vmin:ma[0]/1000*r,vmax:ma[1]/1000*r};
+}
+function txCalc(unit,x){
+  var c=txCfg(),p=NaN;
+  if(unit==='TX') p=(x-c.t.min)/c.t.div;
+  else if(unit==='IND') p=(c.smax-c.smin)!==0?(x-c.smin)/(c.smax-c.smin):0;
+  else if(unit==='PCT') p=x/100;
+  else if(unit==='MA') p=(c.amax-c.amin)!==0?(x-c.amin)/(c.amax-c.amin):0;
+  else if(unit==='V') p=(c.vmax-c.vmin)!==0?(x-c.vmin)/(c.vmax-c.vmin):0;
+  var tr=Math.round(c.t.min+c.t.div*p), txs='--', txraw='';
+  if(isFinite(tr)){
+    if(!c.t.hex){ if(tr>=1000) tr=999; if(tr<0) tr=0; txs=String(tr); txraw=txs; }
+    else { if(tr<0) tr=0; txraw=tr.toString(16).toUpperCase(); txs=txraw+'  ('+tr+')'; }
+  }
+  var ind=c.smin+(c.smax-c.smin)*p, ma=c.amin+(c.amax-c.amin)*p, v=c.vmin+(c.vmax-c.vmin)*p;
+  var res={rows:[
+    {l:'伝送値 '+c.t.short,v:txs,u:'TX',raw:txraw,hex:c.t.hex},
+    {l:'指示値 (目盛)',v:fx(ind,2),u:'IND',raw:ind},
+    {l:'割合',v:fx(p*100,2)+' %',u:'PCT',raw:p*100},
+    {l:'電流',v:fx(ma,3)+' mA',u:'MA',raw:ma},
+    {l:'電圧 '+(S.set.vmode==='15'?'(1-5V)':'('+c.r+'Ω)'),v:fx(v,3)+' V',u:'V',raw:v}
+  ],note:c.t.name+' ・ 目盛 '+fx(c.smin,2)+'〜'+fx(c.smax,2)+' ・ '+fx(c.amin,0)+'〜'+fx(c.amax,0)+' mA ・ '+(S.set.vmode==='15'?'1-5V (250Ω)':c.r+'Ω')};
+  if(isFinite(p)&&(p<-0.0001||p>1.0001)) res.warn='範囲外の値です (割合 '+fx(p*100,1)+' %)';
+  return res;
+}
+
+/* ================= ツール定義 ================= */
+var C50={'5D-2V':1.7,'5D-FB':1.1,'8D-FB':0.8,'10D-FB':0.65,'RG-58A/U':3.8};
+var C75={'3C-2V':3.0,'5C-2V':1.9,'5C-FB':1.3,'7C-FB':0.96,'RG-59B/U':3.4};
+var LDC={'5D-2V':0.19,'8D-2V':0.13,'10D-2V':0.10,'5D-FB':0.08,'8D-FB':0.06,'10D-FB':0.05,'直接入力':null};
+var MAT={'鉄 (SS400相当)':7.85,'銅':8.96,'アルミ':2.70,'ステンレス (SUS304)':7.93,'しんちゅう':8.45,'コンクリート':2.35,'水':1.00,'油 (作動油目安)':0.87,'任意 (比重を入力)':null};
+var COL={'黒':{v:0,m:1,h:'#000000',t:null},'茶':{v:1,m:10,h:'#8B4513',t:1},'赤':{v:2,m:100,h:'#FF0000',t:2},'橙':{v:3,m:1e3,h:'#FFA500',t:null},'黄':{v:4,m:1e4,h:'#FFFF00',t:null},'緑':{v:5,m:1e5,h:'#008000',t:0.5},'青':{v:6,m:1e6,h:'#0000FF',t:0.25},'紫':{v:7,m:1e7,h:'#800080',t:0.1},'灰':{v:8,m:1e8,h:'#808080',t:0.05},'白':{v:9,m:1e9,h:'#FFFFFF',t:null},'金':{v:null,m:0.1,h:'#D4AF37',t:5},'銀':{v:null,m:0.01,h:'#C0C0C0',t:10}};
+var COLK=Object.keys(COL);
+var SQ=['0.75','1.25','2','3.5','5.5','8','14','22','38','60','100','150','200','250','325'];
+var VDK={'1Φ2W':35.6,'1Φ3W':17.8,'3Φ3W':30.8};
+var VDN={'1Φ2W':'単相2線式','1Φ3W':'単相3線式','3Φ3W':'三相3線式'};
+function cidrs(){var a=[];for(var i=32;i>=8;i--)a.push(String(i));return a;}
+function N(v,k){return evalExpr(v[k]);}
+function R(l,v,strong){return {l:l,v:v,strong:!!strong};}
+
+var TOOLS={
+ vswr:{name:'VSWR 計算',fields:[
+   {k:'pf',label:'進行波電力 Pf',unit:'W',def:'1.00'},
+   {k:'pr',label:'反射波電力 Pr',unit:'W',def:'0.03'}],
+  calc:function(v){
+   var pf=N(v,'pf'),pr=N(v,'pr'); if(!(pf>0)) return {warn:'Pf に 0 より大きい値を入力してください'};
+   if(!(pr>=0)) pr=0; var rho=Math.sqrt(pr/pf), sw=rho<1?(1+rho)/(1-rho):Infinity;
+   var rl=rho>0?-20*Math.log10(rho):Infinity, ml=rho<1?-10*Math.log10(1-rho*rho):Infinity;
+   return {rows:[R('VSWR',isFinite(sw)?sw.toFixed(3):'∞',1),R('判定',sw<1.5?'良 (1.5未満)':'要調整',1),R('反射係数 ρ',rho.toFixed(4)),R('リターンロス',isFinite(rl)?rl.toFixed(2)+' dB':'∞'),R('ミスマッチ損失',isFinite(ml)?ml.toFixed(3)+' dB':'∞'),R('反射電力比',fx(pr/pf*100,2)+' %')]};
+  }},
+ wave:{name:'波長・ケーブル長',fields:[
+   {k:'f',label:'周波数',unit:'MHz',def:'71.790',presets:['70','150','400','900','1200']},
+   {k:'vf',label:'短縮率 VF',unit:'',def:'0.67',presets:['0.67','0.78','0.80','0.85']},
+   {k:'n',label:'λ/2 の倍数 n',unit:'倍',def:'12'}],
+  calc:function(v){
+   var f=N(v,'f'),vf=N(v,'vf'),n=Math.round(N(v,'n')); if(!(f>0)) return {warn:'周波数に 0 より大きい値を入力してください'};
+   if(!isFinite(vf)) vf=0.67; if(!(n>=1)) n=1; var l=300/f, lc=l*vf;
+   return {rows:[R('推奨ケーブル長 (λ/2×'+n+')',(lc/2*n).toFixed(3)+' m',1),R('λ  (ケーブル内)',l.toFixed(3)+' m ('+lc.toFixed(3)+')'),R('λ/2',(l/2).toFixed(3)+' m ('+(lc/2).toFixed(3)+')'),R('λ/4',(l/4).toFixed(3)+' m ('+(lc/4).toFixed(3)+')')],note:'( ) 内は短縮率を掛けたケーブル内の長さ'};
+  }},
+ coax:{name:'同軸ケーブル損失',fields:[
+   {k:'imp',label:'インピーダンス',type:'opt',opts:['50','75'],fmt:function(x){return x+'Ω';},def:'50'},
+   {k:'cab',label:'ケーブル',type:'opt',opts:function(v){return Object.keys(v.imp==='75'?C75:C50);},def:'10D-FB'},
+   {k:'f',label:'周波数',unit:'MHz',def:'70',presets:['70','150','400','900','1200']},
+   {k:'len',label:'長さ',unit:'m',def:'10'}],
+  change:function(v,k){ if(k==='imp'){ var o=Object.keys(v.imp==='75'?C75:C50); if(o.indexOf(v.cab)<0) v.cab=o[0]; } },
+  calc:function(v){
+   var tb=v.imp==='75'?C75:C50, ref=tb[v.cab]; var f=N(v,'f'),L=N(v,'len'); if(!(f>0)||!(L>=0)) return {warn:'周波数と長さを入力してください'};
+   var pm=ref/10*Math.sqrt(f/400), loss=pm*L;
+   return {rows:[R('損失','−'+loss.toFixed(2)+' dB',1),R('1 m あたり',pm.toFixed(4)+' dB/m'),R('通過電力比',fx(Math.pow(10,-loss/10)*100,1)+' %')],note:'基準 '+v.cab+' : '+ref+' dB/10m @400MHz、√(f/400) で換算'};
+  }},
+ link:{name:'無線回線設計',fields:[
+   {k:'f',label:'周波数',unit:'MHz',def:'70',presets:['70','150','400','900','1200']},
+   {k:'pt',label:'送信出力',unit:'W',def:'1.0'},
+   {k:'gt',label:'送信アンテナ利得',unit:'dBi',def:'2.15'},
+   {k:'cab',label:'同軸ケーブル',type:'opt',opts:Object.keys(LDC),def:'10D-FB'},
+   {k:'lpm',label:'ケーブル損失',unit:'dB/m',def:'0.05'},
+   {k:'len',label:'ケーブル長',unit:'m',def:'10'},
+   {k:'sw',label:'切替器等の損失',unit:'dB',def:'0'},
+   {k:'d',label:'伝搬距離',unit:'km',def:'5'},
+   {k:'gr',label:'受信アンテナ利得',unit:'dBi',def:'2.15'}],
+  change:function(v,k){ if(k==='cab'&&LDC[v.cab]!=null) v.lpm=String(LDC[v.cab]); },
+  calc:function(v){
+   var f=N(v,'f'),pt=N(v,'pt'),gt=N(v,'gt')||0,lpm=N(v,'lpm')||0,len=N(v,'len')||0,sw=N(v,'sw')||0,d=N(v,'d'),gr=N(v,'gr')||0;
+   if(!(pt>0)||!(f>0)||!(d>0)) return {warn:'周波数・送信出力・距離に 0 より大きい値を入力してください'};
+   var txd=10*Math.log10(pt*1000), cl=lpm*len+sw, ant=txd-cl, eirp=ant+gt, fspl=20*Math.log10(d)+20*Math.log10(f)+32.44, rx=eirp-fspl+gr;
+   var f1=17.3*Math.sqrt((d/4)/(f/1000));
+   return {rows:[R('受信電力',rx.toFixed(2)+' dBm',1),R('受信電圧',(rx+off()).toFixed(2)+' dBμV',1),R('送信出力',txd.toFixed(2)+' dBm'),R('給電線＋切替器損失','−'+cl.toFixed(2)+' dB'),R('アンテナ直下電力',ant.toFixed(2)+' dBm'),R('EIRP',eirp.toFixed(2)+' dBm'),R('自由空間伝搬損失','−'+fspl.toFixed(2)+' dB'),R('第1フレネル半径 (中央)',f1.toFixed(1)+' m')],note:'dBμV は '+S.set.imp+'Ω系で換算'};
+  }},
+ power:{name:'消費電力',fields:[
+   {k:'ph',label:'相',type:'opt',opts:['1','3'],fmt:function(x){return x==='3'?'三相 (3Φ3W)':'単相 (1Φ)';},def:'1'},
+   {k:'md',label:'求めるもの',type:'opt',opts:['P','I','V'],fmt:function(x){return {P:'電力 P',I:'電流 I',V:'電圧 V'}[x];},def:'P'},
+   {k:'v',label:'電圧 V',unit:'V',def:'100',show:function(v){return v.md!=='V';}},
+   {k:'p',label:'電力 P',unit:'W',def:'2000',show:function(v){return v.md!=='P';}},
+   {k:'i',label:'電流 I',unit:'A',def:'10',show:function(v){return v.md!=='I';}},
+   {k:'pf',label:'力率 cosφ',unit:'',def:'1.00',presets:['1.00','0.95','0.90','0.85','0.80']},
+   {k:'vrs',label:'実測 R-S (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
+   {k:'vst',label:'実測 S-T (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
+   {k:'vtr',label:'実測 T-R (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}}],
+  change:function(v,k){ if(k==='ph') v.v=v.ph==='3'?'200':'100'; },
+  calc:function(v){
+   var k=v.ph==='3'?Math.sqrt(3):1, pf=N(v,'pf'), V=N(v,'v'), P=N(v,'p'), I=N(v,'i'), note='';
+   if(v.ph==='3'&&v.md!=='V'){ var ls=[N(v,'vrs'),N(v,'vst'),N(v,'vtr')].filter(function(x){return x>0;}); if(ls.length){V=ls.reduce(function(a,b){return a+b;},0)/ls.length; note='実測 '+ls.length+' 点の平均電圧 '+V.toFixed(1)+' V を使用';} }
+   if(!isFinite(pf)) return {warn:'力率を入力してください'};
+   if(v.md==='P'){ if(!isFinite(V)||!isFinite(I)) return {warn:'電圧と電流を入力してください'}; P=k*V*I*pf; }
+   else if(v.md==='I'){ if(!isFinite(P)||!isFinite(V)) return {warn:'電力と電圧を入力してください'}; var d=k*V*pf; I=d?Math.abs(P/d):0; }
+   else { if(!isFinite(P)||!isFinite(I)) return {warn:'電力と電流を入力してください'}; var d2=k*I*pf; V=d2?Math.abs(P/d2):0; }
+   var s=Math.abs(k*V*I);
+   return {rows:[R('電力 P',fx(P,2)+' W  ('+fx(P/1000,3)+' kW)',v.md==='P'),R('電流 I',fx(I,3)+' A',v.md==='I'),R('電圧 V',fx(V,1)+' V',v.md==='V'),R('力率',fx(pf,2)),R('皮相電力',fx(s,2)+' VA')],note:(v.ph==='3'?'P = √3・V・I・cosφ':'P = V・I・cosφ')+(note?' ・ '+note:'')};
+  }},
+ vdrop:{name:'ケーブル電圧降下',fields:[
+   {k:'sys',label:'配電方式',type:'opt',opts:['1Φ2W','1Φ3W','3Φ3W'],fmt:function(x){return VDN[x];},def:'1Φ2W'},
+   {k:'vb',label:'基準電圧',unit:'V',def:'100',presets:['100','200','400']},
+   {k:'i',label:'電流',unit:'A',def:'15'},
+   {k:'l',label:'こう長 (片道)',unit:'m',def:'20'},
+   {k:'sq',label:'電線太さ',type:'opt',opts:SQ,fmt:function(x){return x+' sq';},def:'2'}],
+  change:function(v,k){ if(k==='sys') v.vb=v.sys==='3Φ3W'?'200':'100'; },
+  calc:function(v){
+   var vb=N(v,'vb'),i=N(v,'i'),l=N(v,'l'),a=+v.sq,K=VDK[v.sys]; if(!(vb>0)||!isFinite(i)||!isFinite(l)) return {warn:'電圧・電流・長さを入力してください'};
+   var e=K*l*i/(1000*a);
+   return {rows:[R('電圧降下 e',e.toFixed(2)+' V',1),R('電圧降下率',(e/vb*100).toFixed(2)+' %',1),R('受電端電圧',(vb-e).toFixed(1)+' V'),R('係数 K',String(K))],note:'e = K・L・I ÷ (1000・A)  '+VDN[v.sys]+(v.sys==='1Φ3W'?' (外側線と中性線間)':'')};
+  }},
+ batt:{name:'バッテリー持続',fields:[
+   {k:'ah',label:'バッテリー容量',unit:'Ah',def:'20'},
+   {k:'a',label:'負荷電流',unit:'A',def:'0.5'},
+   {k:'sf',label:'安全率 (0.1〜1.0)',unit:'',def:'0.80',presets:['1.00','0.90','0.80','0.70','0.60','0.50']}],
+  calc:function(v){
+   var ah=N(v,'ah'),a=N(v,'a'),sf=N(v,'sf'); if(!(ah>=0)||!(a>0)||!(sf>0)) return {warn:'負荷電流には 0 以外の値を入力してください'};
+   var h=ah*sf/a, hh=Math.floor(h), mm=Math.round((h-hh)*60); if(mm===60){hh++;mm=0;}
+   return {rows:[R('持続時間',h.toFixed(1)+' 時間',1),R('',hh+' 時間 '+mm+' 分'),R('日数換算',(h/24).toFixed(2)+' 日')],note:'('+ah+' Ah × '+sf+') ÷ '+a+' A'};
+  }},
+ ohm:{name:'オームの法則',fields:[
+   {k:'md',label:'求めるもの',type:'opt',opts:['V','I','R'],fmt:function(x){return {V:'電圧 V',I:'電流 I',R:'抵抗 R'}[x];},def:'V'},
+   {k:'v',label:'電圧 V',unit:'V',def:'5',show:function(v){return v.md!=='V';}},
+   {k:'i',label:'電流 I',unit:'mA',def:'20',show:function(v){return v.md!=='I';}},
+   {k:'r',label:'抵抗 R',unit:'Ω',def:'250',show:function(v){return v.md!=='R';}}],
+  calc:function(v){
+   var V=N(v,'v'),I=N(v,'i'),Rr=N(v,'r');
+   if(v.md==='V'){ if(!isFinite(I)||!isFinite(Rr)) return {warn:'電流と抵抗を入力してください'}; V=I/1000*Rr; }
+   else if(v.md==='I'){ if(!isFinite(V)||!(Rr!==0)) return {warn:'電圧と 0 以外の抵抗を入力してください'}; I=V/Rr*1000; }
+   else { if(!isFinite(V)||!(I!==0)) return {warn:'電圧と 0 以外の電流を入力してください'}; Rr=V/(I/1000); }
+   return {rows:[R('電圧 V',V.toFixed(4)+' V',v.md==='V'),R('電流 I',I.toFixed(3)+' mA  ('+(I/1000).toFixed(6)+' A)',v.md==='I'),R('抵抗 R',Rr>=1000?Rr.toFixed(2)+' Ω  ('+(Rr/1000).toFixed(4)+' kΩ)':Rr.toFixed(2)+' Ω',v.md==='R'),R('電力',si(V*I/1000,'W'))],note:'V = I × R'};
+  }},
+ area:{name:'面積・坪・畳',fields:[
+   {k:'md',label:'入力方法',type:'opt',opts:['LW','M2'],fmt:function(x){return x==='LW'?'縦 × 横':'面積を直接';},def:'LW'},
+   {k:'l',label:'縦',unit:'m',def:'3.64',show:function(v){return v.md==='LW';}},
+   {k:'w',label:'横',unit:'m',def:'2.73',show:function(v){return v.md==='LW';}},
+   {k:'m2',label:'面積',unit:'㎡',def:'10',show:function(v){return v.md==='M2';}}],
+  calc:function(v){
+   var m2=v.md==='LW'?N(v,'l')*N(v,'w'):N(v,'m2'); if(!(m2>=0)) return {warn:'0 以上の数値を入力してください'};
+   return {rows:[R('面積',m2.toFixed(3)+' ㎡',1),R('坪',(m2*0.3025).toFixed(2)+' 坪',1),R('畳 (中京間 1.6562㎡)',(m2/1.6562).toFixed(2)+' 畳'),R('畳 (江戸間 1.5488㎡)',(m2/1.5488).toFixed(2)+' 畳'),R('畳 (京間 1.82405㎡)',(m2/1.82405).toFixed(2)+' 畳')]};
+  }},
+ mass:{name:'質量 (板・角材)',fields:[
+   {k:'mat',label:'材質',type:'opt',opts:Object.keys(MAT),def:'鉄 (SS400相当)'},
+   {k:'dn',label:'比重',unit:'g/cm³',def:'7.85'},
+   {k:'l',label:'長さ',unit:'mm',def:'1000'},
+   {k:'w',label:'幅',unit:'mm',def:'100'},
+   {k:'t',label:'厚さ',unit:'mm',def:'10'}],
+  change:function(v,k){ if(k==='mat'&&MAT[v.mat]!=null) v.dn=MAT[v.mat].toFixed(2); },
+  calc:function(v){
+   var d=N(v,'dn'),l=N(v,'l'),w=N(v,'w'),t=N(v,'t'); if(!(d>=0)||!(l>=0)||!(w>=0)||!(t>=0)) return {warn:'0 以上の数値を入力してください'};
+   var cm3=l*w*t/1000, g=cm3*d;
+   return {rows:[R('質量',(g/1000).toFixed(3)+' kg',1),R('',fx(g,1)+' g'),R('体積',fx(cm3,2)+' cm³')]};
+  }},
+ resist:{name:'カラー抵抗',fields:[
+   {k:'bands',label:'帯の本数',type:'opt',opts:['4','5'],fmt:function(x){return x+' 本帯';},def:'4'},
+   {k:'b1',label:'第1色帯',type:'opt',col:1,opts:COLK.filter(function(c){return COL[c].v!==null;}),def:'茶'},
+   {k:'b2',label:'第2色帯',type:'opt',col:1,opts:COLK.filter(function(c){return COL[c].v!==null;}),def:'黒'},
+   {k:'b3',label:'第3色帯',type:'opt',col:1,opts:COLK.filter(function(c){return COL[c].v!==null;}),def:'黒',show:function(v){return v.bands==='5';}},
+   {k:'mul',label:'乗数帯',type:'opt',col:1,opts:COLK,def:'赤'},
+   {k:'tol',label:'許容差帯',type:'opt',col:1,opts:COLK.filter(function(c){return COL[c].t!==null;}),def:'金'}],
+  calc:function(v){
+   var b=v.bands==='5'?COL[v.b1].v*100+COL[v.b2].v*10+COL[v.b3].v:COL[v.b1].v*10+COL[v.b2].v;
+   var o=b*COL[v.mul].m, s;
+   if(o>=1e6) s=Number((o/1e6).toFixed(2))+' MΩ'; else if(o>=1e3) s=Number((o/1e3).toFixed(2))+' kΩ'; else s=Number(o.toFixed(2))+' Ω';
+   return {rows:[R('抵抗値',s,1),R('許容差','± '+COL[v.tol].t+' %'),R('範囲',si(o*(1-COL[v.tol].t/100),'Ω')+' 〜 '+si(o*(1+COL[v.tol].t/100),'Ω'))]};
+  }},
+ cap:{name:'コンデンサー表記',fields:[
+   {k:'code',label:'3桁表記',type:'code',unit:'',def:'104'},
+   {k:'vc',label:'耐圧記号',type:'opt',opts:['なし','1H','2A','2E','2J'],fmt:function(x){return {'なし':'表記なし','1H':'1H (50V)','2A':'2A (100V)','2E':'2E (250V)','2J':'2J (630V)'}[x];},def:'なし'}],
+  calc:function(v){
+   if(!/^\d{3}$/.test(v.code)) return {warn:'数字 3 桁で入力してください (例: 104)'};
+   var pf=(+v.code[0]*10+ +v.code[1])*Math.pow(10,+v.code[2]);
+   var g=function(x){return String(parseFloat(x.toFixed(6)));};
+   var rows=[R('容量',g(pf/1e6)+' μF',1),R('',g(pf/1e3)+' nF'),R('',pf.toLocaleString('ja-JP')+' pF')];
+   if(v.vc!=='なし') rows.push(R('耐圧',{'1H':'50 V','2A':'100 V','2E':'250 V','2J':'630 V'}[v.vc]));
+   return {rows:rows,note:'上2桁 × 10^(3桁目) pF'};
+  }},
+ ipv4:{name:'IPv4 サブネット',fields:[
+   {k:'ip',label:'IP アドレス',type:'ip',unit:'',def:'192.168.1.10'},
+   {k:'cidr',label:'プレフィックス長 /',unit:'',def:'24',presets:cidrs()}],
+  calc:function(v){
+   var m=String(v.ip).match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+   if(!m||m.slice(1).some(function(x){return +x>255;})) return {warn:'IP アドレスの形式が正しくありません (例: 192.168.1.10)'};
+   var c=Math.round(N(v,'cidr')); if(!(c>=0&&c<=32)) return {warn:'プレフィックス長は 0〜32'};
+   var ip=((+m[1]<<24)|(+m[2]<<16)|(+m[3]<<8)|+m[4])>>>0;
+   var mask=c===0?0:(~0<<(32-c))>>>0, wc=(~mask)>>>0, net=(ip&mask)>>>0, bc=(net|wc)>>>0;
+   var ts=function(n){return [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');};
+   var tot=Math.pow(2,32-c);
+   return {rows:[R('ネットワーク',ts(net)+'/'+c,1),R('サブネットマスク',ts(mask)),R('ブロードキャスト',ts(bc)),R('先頭ホスト',c<=30?ts(net+1):'N/A'),R('最終ホスト',c<=30?ts(bc-1):'N/A'),R('利用可能ホスト数',(c<=30?tot-2:tot).toLocaleString('ja-JP'),1),R('ワイルドカード',ts(wc))]};
+  }}
+};
+var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4'];
+
+function tv(id){ if(!S.tv[id]) S.tv[id]={}; var v=S.tv[id]; TOOLS[id].fields.forEach(function(f){ if(v[f.k]===undefined) v[f.k]=f.def; }); return v; }
+function visFields(id){ var v=tv(id); return TOOLS[id].fields.filter(function(f){return !f.show||f.show(v);}); }
+function optsOf(f,v){ return typeof f.opts==='function'?f.opts(v):f.opts; }
+function curField(){ var fs=visFields(S.tool); if(S.field>=fs.length) S.field=fs.length-1; if(S.field<0) S.field=0; return fs[S.field]; }
+function setV(f,val){ var v=tv(S.tool); v[f.k]=val; if(TOOLS[S.tool].change) TOOLS[S.tool].change(v,f.k); }
+function openTool(id,prefill){
+  S.prev=S.mode==='list'?S.prev:S.mode; S.mode='tool'; S.tool=id; S.field=0; S.fresh=true; tv(id);
+  if(prefill){ var x=entryVal(); if(isFinite(x)&&S.entry.length){ S.tv[id][TOOLS[id].fields[0].k]=rawNum(x); S.field=1; } }
+}
+
+/* ================= 入力ロジック ================= */
+function entryStr(){return S.entry.join('');}
+function entryVal(){
+  var s=entryStr();
+  if(S.mode==='conv'&&S.unit==='TX'&&TXT[S.set.tx].hex){ return /^[0-9A-F]+$/i.test(s)?parseInt(s,16):NaN; }
+  if(S.justEval&&S.mode==='calc') return S.ans;
+  return evalExpr(s);
+}
+var OPCONT=['+','−','×','÷','^','²','⁻¹'];
+function ins(p){
+  if(S.mode==='list'){ if(/^\d$/.test(p)){ var i=(p==='0'?10:+p)-1; if(TLIST[i]) openTool(TLIST[i]); } return; }
+  if(S.mode==='tool') return fieldInput(p);
+  if(S.mode==='calc'&&S.justEval){
+    S.justEval=false;
+    S.entry = OPCONT.indexOf(p)>=0 ? pieces(rawNum(S.ans)) : [];
+  }
+  S.err=''; S.hi=-1;
+  S.entry.push(p);
+}
+function fieldInput(p){
+  var f=curField(), v=tv(S.tool);
+  if(f.type==='opt'){ if(/^\d$/.test(p)){ var o=optsOf(f,v), i=+p-1; if(i>=0&&i<o.length) setV(f,o[i]); } return; }
+  if(f.type==='code'&&!/^\d$/.test(p)) return;
+  if(f.type==='ip'&&!/^[\d.]$/.test(p)) return;
+  if(/^[A-F]$/.test(p)) return;
+  var s=S.fresh?'':String(v[f.k]);
+  if(S.fresh&&OPCONT.indexOf(p)>=0) s=String(v[f.k]);
+  s+=p; if(f.type==='code') s=s.slice(-3);
+  setV(f,s); S.fresh=false;
+}
+function bs(){
+  if(S.mode==='tool'){ var f=curField(); if(f.type==='opt') return; var v=tv(S.tool); setV(f,String(v[f.k]).slice(0,-1)); S.fresh=false; return; }
+  if(S.mode==='list') return;
+  if(S.justEval){ S.justEval=false; S.entry=pieces(S.lastExpr); }
+  S.entry.pop(); S.err='';
+}
+function clr(){
+  if(S.mode==='list'){ S.mode=S.prev||'calc'; return; }
+  if(S.mode==='tool'){ var f=curField(), v=tv(S.tool); if(f.type!=='opt'&&String(v[f.k])!==''){ setV(f,''); S.fresh=false; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } return; }
+  if(S.mode==='conv'){ if(S.entry.length){ S.entry=[]; } else { S.mode='calc'; } return; }
+  S.entry=[]; S.justEval=false; S.lastExpr=''; S.err=''; S.hi=-1;
+}
+function allClear(){ S.mode='calc'; S.entry=[]; S.justEval=false; S.lastExpr=''; S.err=''; S.hi=-1; }
+function plusMinus(){
+  if(S.mode==='tool'){ var f=curField(); if(f.type&&f.type!=='num') return; var v=tv(S.tool), s=String(v[f.k]); setV(f,s.charAt(0)==='-'?s.slice(1):'-'+s); S.fresh=false; return; }
+  if(S.mode==='list') return;
+  if(S.mode==='calc'&&S.justEval){ S.justEval=false; S.entry=pieces(rawNum(-S.ans)); return; }
+  var e=S.entry, n=e.length;
+  if(n&&e[n-1]==='ᴇ'){ e.push('-'); return; }
+  if(n>1&&e[n-1]==='-'&&e[n-2]==='ᴇ'){ e.pop(); return; }
+  var i=n; while(i>0&&/^[0-9.A-Fᴇ]$/.test(e[i-1])) i--;
+  if(i>0&&e[i-1]==='-'&&e[i-2]==='ᴇ'){ i-=2; while(i>0&&/^[0-9.A-F]$/.test(e[i-1])) i--; }
+  if(i>0&&e[i-1]==='-') e.splice(i-1,1); else e.splice(i,0,'-');
+}
+function equals(){
+  if(S.mode==='list'){ openTool(TLIST[S.sel]); return; }
+  if(S.mode==='tool'){ var n=visFields(S.tool).length; S.field=(S.field+1)%n; S.fresh=true; return; }
+  if(S.mode==='conv'){ var x=entryVal(); if(isFinite(x)) pushHist(entryStr()+' '+UNAME[S.unit],x,S.entry.slice()); return; }
+  if(S.justEval||!S.entry.length) return;
+  var v=evalExpr(entryStr());
+  S.lastExpr=entryStr();
+  if(!isFinite(v)){ S.err=isNaN(v)?'Syntax ERROR':'Math ERROR'; return; }
+  S.ans=v; S.justEval=true; S.err='';
+  pushHist(S.lastExpr,v,S.entry.slice());
+}
+function pushHist(expr,v,p){ S.hist.unshift({e:expr,v:v,p:p}); if(S.hist.length>30) S.hist.length=30; S.hi=-1; }
+function upDown(d){
+  if(S.mode==='tool'){ var n=visFields(S.tool).length; S.field=(S.field+d+n)%n; S.fresh=true; return; }
+  if(S.mode==='list'){ S.sel=(S.sel+d+TLIST.length)%TLIST.length; return; }
+  if(S.mode==='conv'){ var g=RF.indexOf(S.unit)>=0?RF:TX, i=g.indexOf(S.unit); S.unit=g[(i+d+g.length)%g.length]; return; }
+  if(!S.hist.length) return;
+  var hi=S.hi+(d<0?1:-1); if(hi<0){ S.hi=-1; S.entry=[]; S.justEval=false; return; }
+  if(hi>=S.hist.length) hi=S.hist.length-1;
+  S.hi=hi; var h=S.hist[hi]; S.entry=(h.p||[]).slice(); S.justEval=false; S.err='';
+}
+function leftRight(d){
+  if(S.mode==='tool'){
+    var f=curField(), v=tv(S.tool);
+    if(f.type==='opt'){ var o=optsOf(f,v), i=o.indexOf(v[f.k]); setV(f,o[(i+d+o.length)%o.length]); return; }
+    if(f.presets){ var ps=f.presets, cur=N(v,f.k), j=-1; for(var k=0;k<ps.length;k++){ if(Math.abs(+ps[k]-cur)<1e-9){j=k;break;} }
+      j = j<0 ? 0 : (j+d+ps.length)%ps.length; setV(f,ps[j]); S.fresh=true; }
+    return;
+  }
+  if(S.mode==='conv'){ if(RF.indexOf(S.unit)>=0) toggleImp(); else cycleTx(d); }
+}
+function toggleImp(){ S.set.imp=S.set.imp===50?75:50; }
+function cycleTx(d){ var i=TXORDER.indexOf(S.set.tx); S.set.tx=TXORDER[(i+d+3)%3]; }
+function toConv(u){
+  if(S.mode==='tool'||S.mode==='list') S.mode='calc';
+  if(S.mode==='calc'){
+    if(S.justEval){ S.entry=pieces(rawNum(S.ans)); S.justEval=false; }
+    else if(S.entry.length&&!(u==='TX'&&TXT[S.set.tx].hex)){ var x=evalExpr(entryStr()); if(isFinite(x)&&/[+−×÷^²√(]|log|ln|⁻¹/.test(entryStr())) S.entry=pieces(rawNum(x)); }
+  }
+  S.mode='conv'; S.unit=u; S.err='';
+}
+function rebase(u,raw,hex){
+  if(raw===''||raw===undefined||(typeof raw==='number'&&!isFinite(raw))) return;
+  S.unit=u; S.entry=pieces(hex?String(raw):rawNum(Number(raw)));
+}
+
+/* ================= キー定義 ================= */
+var KEYS=[
+ [ {k:'tool',t:'TOOL',c:'alt'},{k:'shift',t:'SHIFT',c:'sh'},{k:'set',t:'⚙ 設定',c:'lt jp'},{k:'bs',t:'⌫ BS',c:'lt'},{k:'clr',t:'CLR',c:'cl',s:'AC'} ],
+ [ {k:'pm',t:'(−)',c:'lt'},{k:'up',t:'▲',c:'lt'},{k:'down',t:'▼',c:'lt'},{k:'left',t:'◀',c:'lt'},{k:'right',t:'▶',c:'lt'} ],
+ [ {k:'dBm',t:'dBm',c:'lt',s:'50/75Ω'},{k:'dBuV',t:'dBμV',c:'lt'},{k:'W',t:'W',c:'lt'},{k:'mW',t:'mW',c:'lt'},{k:'vswr',t:'VSWR',c:'lt jp',s:'波長'} ],
+ [ {k:'TX',t:'伝送値',c:'lt jp',s:'種別切替'},{k:'IND',t:'指示値',c:'lt jp'},{k:'PCT',t:'割合%',c:'lt jp'},{k:'MA',t:'電流mA',c:'lt jp'},{k:'V',t:'電圧V',c:'lt jp'} ],
+ [ {k:'sq',t:'x²',c:'lt',s:'xʸ'},{k:'sqrt',t:'√',c:'lt',s:'∛'},{k:'log',t:'log',c:'lt',s:'ln'},{k:'pow10',t:'10ˣ',c:'lt',s:'eˣ'},{k:'inv',t:'x⁻¹',c:'lt',s:'π'} ],
+ [ {k:'7',t:'7',c:'dk'},{k:'8',t:'8',c:'dk'},{k:'9',t:'9',c:'dk'},{k:'(',t:'(',c:'dk op'},{k:')',t:')',c:'dk op'} ],
+ [ {k:'4',t:'4',c:'dk',b:'D'},{k:'5',t:'5',c:'dk',b:'E'},{k:'6',t:'6',c:'dk',b:'F'},{k:'×',t:'×',c:'dk op'},{k:'÷',t:'÷',c:'dk op'} ],
+ [ {k:'1',t:'1',c:'dk',b:'A'},{k:'2',t:'2',c:'dk',b:'B'},{k:'3',t:'3',c:'dk',b:'C'},{k:'+',t:'+',c:'dk op'},{k:'−',t:'−',c:'dk op'} ],
+ [ {k:'0',t:'0',c:'dk'},{k:'.',t:'・',c:'dk'},{k:'exp',t:'Exp',c:'dk sm'},{k:'ans',t:'Ans',c:'dk sm'},{k:'=',t:'=',c:'dk op'} ]
+];
+function buildKeys(){
+  var h='';
+  KEYS.forEach(function(row,ri){
+    row.forEach(function(k){
+      var top = ri===1 ? '<div class="kl none"></div>' : (ri>=5 ? '' : '<div class="kl">'+(k.s?esc(k.s):'')+'</div>');
+      if(ri>=5) top='';
+      var cls='k '+k.c;
+      var inner=esc(k.t)+(k.b?'<span class="br">'+k.b+'</span>':'');
+      h+='<div class="kc'+(ri>=5?' dkrow':'')+'">'+top+'<button type="button" class="'+cls+'" data-k="'+esc(k.k)+'" id="key-'+ri+'-'+esc(k.k).replace(/[^\w]/g,'_')+'" aria-label="'+esc(k.t)+(k.s?' / SHIFT: '+esc(k.s):'')+'">'+inner+'</button></div>';
+    });
+  });
+  $('keys').innerHTML=h;
+}
+
+function press(k){
+  var sh=S.shift; if(k!=='shift') S.shift=false;
+  buzz();
+  switch(k){
+    case 'shift': S.shift=!sh; break;
+    case 'tool': if(S.mode==='list'){ S.mode=S.prev||'calc'; } else { S.prev=S.mode; S.mode='list'; } break;
+    case 'set': openBack(); return;
+    case 'clr': if(sh) allClear(); else clr(); break;
+    case 'bs': bs(); break;
+    case 'pm': plusMinus(); break;
+    case 'up': upDown(-1); break;
+    case 'down': upDown(1); break;
+    case 'left': leftRight(-1); break;
+    case 'right': leftRight(1); break;
+    case 'dBm': if(sh){ toggleImp(); break; } toConv('dBm'); break;
+    case 'TX': if(sh){ cycleTx(1); break; } toConv('TX'); break;
+    case 'dBuV': case 'W': case 'mW': case 'IND': case 'PCT': case 'MA': case 'V': toConv(k); break;
+    case 'vswr': openTool(sh?'wave':'vswr',!sh); break;
+    case 'sq': ins(sh?'^':'²'); if(sh) ins('('); break;
+    case 'sqrt': ins(sh?'∛(':'√('); break;
+    case 'log': ins(sh?'ln(':'log('); break;
+    case 'pow10': if(sh){ ins('ℯ'); ins('^'); ins('('); } else { ins('1'); ins('0'); ins('^'); ins('('); } break;
+    case 'inv': ins(sh?'π':'⁻¹'); break;
+    case 'exp': ins('ᴇ'); break;
+    case 'ans': ins('Ans'); break;
+    case '=': equals(); break;
+    default:
+      if(/^\d$/.test(k)){ if(sh&&/[1-6]/.test(k)) ins('ABCDEF'[+k-1]); else ins(k); }
+      else ins(k);
+  }
+  render(); save();
+}
+
+/* ================= 描画 ================= */
+function render(){
+  // status
+  var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx];
+  $('status').innerHTML='<button type="button" data-go="imp">'+S.set.imp+'Ω</button><button type="button" data-go="tx">'+esc(t.short)+'</button><button type="button" data-go="v">'+(S.set.vmode==='15'?'1-5V':S.set.r+'Ω')+'</button><button type="button" data-go="sc">目盛 '+fx(+sc[0],1)+'〜'+fx(+sc[1],1)+'</button>';
+  document.querySelectorAll('.k.sh').forEach(function(b){ b.classList.toggle('on',S.shift); });
+  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>';
+  var body='';
+  if(S.mode==='calc'){
+    top+='<span>COMP</span>'+(S.hi>=0?'<span>履歴 '+(S.hi+1)+'/'+S.hist.length+'</span>':'')+'<span class="grow"></span>';
+    var shown=S.justEval?S.lastExpr:entryStr();
+    body+='<div class="entry">'+esc(shown||'')+(S.justEval?'':'<span class="cursor"></span>')+'</div>';
+    if(S.err) body+='<div class="result">'+S.err+'</div>';
+    else if(S.justEval) body+='<div class="result">'+esc(fmtNum(S.ans))+'</div>';
+    else if(S.entry.length){ var pv=evalExpr(entryStr()); body+='<div class="result preview">'+(isFinite(pv)?esc(fmtNum(pv)):(/[A-F]/.test(entryStr())?'16進数 → 伝送値キー':''))+'</div>'; }
+    else body+='<div class="hint">数値を入れて <b>単位キー</b> (dBm・W・伝送値 など) を押すと、関連する値をまとめて換算します。<br><b>TOOL</b> で電圧降下・回線設計などの計算、<b>⚙設定</b> で詳細設定。<br>普通の計算は <b>=</b> で。</div><div class="result">0</div>';
+  } else if(S.mode==='conv'){
+    var isRF=RF.indexOf(S.unit)>=0;
+    top+='<span>'+(isRF?'RF':'伝送')+' 換算</span><span class="grow"></span><span>▲▼単位 ◀▶'+(isRF?'Ω':'種別')+'</span>';
+    var x=entryVal(), res=isFinite(x)?(isRF?rfCalc(S.unit,x):txCalc(S.unit,x)):null;
+    body+='<div class="convin"><div class="entry">'+esc(entryStr())+'<span class="cursor"></span></div><span class="u">'+esc(UNAME[S.unit])+(S.unit==='TX'?' '+esc(TXT[S.set.tx].short):'')+'</span></div>';
+    var rows=res?res.rows:(isRF?rfCalc('dBm',NaN):txCalc('PCT',NaN)).rows.map(function(r){return {l:r.l,v:'--',u:r.u};});
+    body+='<div class="rows">'+rows.map(function(r,i){ return '<div class="row'+(r.u===S.unit?' me':'')+(r.u?'':' static')+'" data-row="'+i+'"><span class="l">'+esc(r.l)+'</span><span class="v">'+esc(r.v)+'</span></div>'; }).join('')+'</div>';
+    if(res&&res.warn) body+='<div class="warn">'+esc(res.warn)+'</div>';
+    body+='<div class="note">'+esc((res||(isRF?rfCalc('dBm',0):txCalc('PCT',0))).note)+' ・ 行をタップで入力単位を切替</div>';
+    L._rows=res?res.rows:null;
+  } else if(S.mode==='list'){
+    top+='<span>TOOL 一覧</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(TOOLS[id].name)+'</span><span class="v">'+TOOLS[id].fields.length+' 項目</span></div>'; }).join('')+'</div>';
+    body+='<div class="note">数字キー・タップ・▲▼＋= で選択</div>';
+  } else if(S.mode==='tool'){
+    var T=TOOLS[S.tool], v=tv(S.tool), fs=visFields(S.tool); curField();
+    top+='<span>TOOL</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 終了</button>';
+    body+='<div class="ttl">'+esc(T.name)+'</div>';
+    body+=fs.map(function(f,i){
+      var val=v[f.k], disp;
+      if(f.type==='opt'){ disp='<span class="opt">'+(f.col?'<span class="sw" style="background:'+COL[val].h+'"></span>':'')+esc(f.fmt?f.fmt(val):val)+'</span>'; }
+      else disp=esc(val===''?'—':val)+(i===S.field&&!S.fresh?'<span class="cursor"></span>':'')+(f.unit?' '+esc(f.unit):'');
+      return '<div class="fld'+(i===S.field?' act':'')+'" data-f="'+i+'"><span class="l">'+esc(f.label)+'</span><span class="v">'+disp+'</span></div>';
+    }).join('');
+    var r=T.calc(v)||{};
+    body+='<div class="sep"></div>';
+    if(r.warn) body+='<div class="warn">'+esc(r.warn)+'</div>';
+    if(r.rows) body+='<div class="rows">'+r.rows.map(function(x){ return '<div class="row static'+(x.strong?' strong':'')+'"><span class="l">'+esc(x.l)+'</span><span class="v">'+esc(x.v)+'</span></div>'; }).join('')+'</div>';
+    if(r.note) body+='<div class="note">'+esc(r.note)+'</div>';
+    body+='<div class="note">▲▼/= 項目移動 ・ ◀▶ 選択肢・プリセット ・ 項目タップで選択</div>';
+  }
+  top+='</div>';
+  L.innerHTML=top+'<div class="lcd-body">'+body+'</div>';
+  var ab=L.querySelector('.fld.act'); if(ab&&ab.scrollIntoView) ab.scrollIntoView({block:'nearest'});
+}
+
+/* ================= 裏画面 (設定) ================= */
+function seg(id,opts,cur){ return '<div class="seg" role="group" id="'+id+'">'+opts.map(function(o){ return '<button type="button" data-v="'+esc(o[0])+'" class="'+(String(cur)===String(o[0])?'on':'')+'">'+esc(o[1])+'</button>'; }).join('')+'</div>'; }
+function tg(id,on,label){ return '<button type="button" class="tg'+(on?' on':'')+'" id="'+id+'" role="switch" aria-checked="'+(on?'true':'false')+'" aria-label="'+esc(label)+'"></button>'; }
+var resetArm=null;
+function renderBack(){
+  var s=S.set;
+  var h='';
+  h+='<div class="sec" id="sec-imp"><h3>RF 換算</h3><div class="fr"><span>インピーダンス</span>'+seg('sImp',[[50,'50 Ω'],[75,'75 Ω']],s.imp)+'</div><div class="help">0 dBm = '+off().toFixed(2)+' dBμV ('+s.imp+'Ω系)。dBm・dBμV・W・mW キーと回線設計の dBμV 表示に使います。</div></div>';
+  h+='<div class="sec" id="sec-tx"><h3>伝送値</h3><div class="fr"><span>伝送値の種別</span></div>'+seg('sTx',[['dec','200-999'],['hex1','990-FD0'],['hex2','3200-FA00 TM']],s.tx);
+  h+='<div class="grid3"><span class="h">種別</span><span class="h">目盛 最小</span><span class="h">目盛 最大</span>';
+  TXORDER.forEach(function(k){ h+='<span>'+esc(TXT[k].name)+'</span><input class="num" type="number" step="any" inputmode="decimal" id="sc_'+k+'_0" value="'+esc(s.scale[k][0])+'"><input class="num" type="number" step="any" inputmode="decimal" id="sc_'+k+'_1" value="'+esc(s.scale[k][1])+'">'; });
+  h+='</div><div class="fr"><label for="ma0">電流 最小 / 最大 (mA)</label><span><input class="num" type="number" step="any" inputmode="decimal" id="ma0" value="'+esc(s.ma[0])+'"> <input class="num" type="number" step="any" inputmode="decimal" id="ma1" value="'+esc(s.ma[1])+'"></span></div>';
+  h+='<div class="fr" id="sec-v"><span>電圧換算</span>'+seg('sVm',[['15','1-5V (250Ω固定)'],['r','受電抵抗を指定']],s.vmode)+'</div>';
+  h+='<div class="fr"><label for="rOhm">受電抵抗 (Ω)</label><input class="num" type="number" step="any" inputmode="decimal" id="rOhm" value="'+esc(s.r)+'"'+(s.vmode==='15'?' disabled':'')+'></div>';
+  h+='<div class="help">換算は 割合 = (入力 − 最小) ÷ 幅 を共通に使い、伝送値・指示値・電流・電圧へ展開します。HEX 種別では伝送値を16進数で入力 (SHIFT＋1〜6 で A〜F)。</div></div>';
+  h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
+  h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
+  h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
+  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>TOOL</b> : VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
+  h+='<div class="sec"><h3>リセット</h3><div class="fr"><span>計算履歴 ('+S.hist.length+' 件)</span><button type="button" class="btn ghost" id="bHist">履歴を消去</button></div>';
+  h+='<div class="fr"><span>すべての設定とツールの入力値</span><button type="button" class="btn danger" id="bReset">'+(resetArm?'もう一度押すと初期化':'初期値に戻す')+'</button></div></div>';
+  h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
+  $('bkBody').innerHTML=h;
+}
+function openBack(){ renderBack(); $('flipper').classList.add('flipped'); $('front').setAttribute('aria-hidden','true'); $('back').removeAttribute('aria-hidden'); setTimeout(function(){ try{$('bkClose').focus({preventScroll:true});}catch(e){} },300); save(); }
+function closeBack(){ $('flipper').classList.remove('flipped'); $('back').setAttribute('aria-hidden','true'); $('front').removeAttribute('aria-hidden'); resetArm=null; render(); save(); }
+function scrollToSec(id){ setTimeout(function(){ var el=$(id); if(el) el.scrollIntoView({block:'start'}); },350); }
+
+/* ================= イベント ================= */
+function buzz(){ if(!S.set.vib) return; try{ if(navigator.vibrate) navigator.vibrate(8); }catch(e){} }
+function bind(){
+  $('keys').addEventListener('click',function(e){ var b=e.target.closest('button[data-k]'); if(!b) return; press(b.getAttribute('data-k')); });
+  $('status').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-go]'); if(!b) return; var g=b.getAttribute('data-go');
+    openBack(); scrollToSec(g==='imp'?'sec-imp':g==='v'?'sec-v':'sec-tx');
+  });
+  $('lcd').addEventListener('click',function(e){
+    var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
+    var t=e.target.closest('[data-tool]'); if(t){ openTool(t.getAttribute('data-tool')); render(); save(); return; }
+    var f=e.target.closest('[data-f]'); if(f){ var i=+f.getAttribute('data-f');
+      if(i===S.field){ var cf=curField(); if(cf.type==='opt') leftRight(1); } else { S.field=i; S.fresh=true; }
+      render(); save(); return; }
+    var r=e.target.closest('[data-row]'); if(r&&S.mode==='conv'&&L_rows()){ var row=L_rows()[+r.getAttribute('data-row')]; if(row&&row.u){ rebase(row.u,row.raw,row.hex); render(); save(); } }
+  });
+  $('bkClose').addEventListener('click',closeBack);
+  $('bkBody').addEventListener('click',function(e){
+    var sb=e.target.closest('.seg button');
+    if(sb){ var g=sb.parentNode.id, v=sb.getAttribute('data-v');
+      if(g==='sImp') S.set.imp=+v; else if(g==='sTx') S.set.tx=v; else if(g==='sVm') S.set.vmode=v; else if(g==='sDg') S.set.digits=v;
+      renderBack(); save(); return; }
+    if(e.target.id==='tVib'){ S.set.vib=!S.set.vib; renderBack(); save(); return; }
+    if(e.target.id==='tRes'){ S.set.restore=!S.set.restore; renderBack(); save(); return; }
+    if(e.target.id==='bHist'){ S.hist=[]; S.hi=-1; renderBack(); save(); return; }
+    if(e.target.id==='bReset'){
+      if(!resetArm){ resetArm=setTimeout(function(){ resetArm=null; if($('flipper').classList.contains('flipped')) renderBack(); },4000); renderBack(); return; }
+      clearTimeout(resetArm); resetArm=null; S.set=clone(DEF_SET); S.tv={}; allClear(); renderBack(); save(); return;
+    }
+  });
+  $('bkBody').addEventListener('input',function(e){
+    var el=e.target, id=el.id, val=el.value; if(val==='') return;
+    var m=id.match(/^sc_(\w+)_(\d)$/);
+    if(m){ S.set.scale[m[1]][+m[2]]=+val; }
+    else if(id==='ma0') S.set.ma[0]=+val; else if(id==='ma1') S.set.ma[1]=+val; else if(id==='rOhm') S.set.r=+val;
+    save();
+  });
+  document.addEventListener('keydown',function(e){
+    if($('flipper').classList.contains('flipped')){ if(e.key==='Escape') closeBack(); return; }
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    var map={'Enter':'=','=':'=','Backspace':'bs','Escape':'clr','Delete':'clr','+':'+','-':'−','*':'×','/':'÷','(':'(',')':')','.':'.','^':null,'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right'};
+    var k=e.key, act=null;
+    if(/^\d$/.test(k)) act=k;
+    else if(/^[a-fA-F]$/.test(k)&&S.mode!=='tool'){ e.preventDefault(); S.shift=true; press(String('abcdef'.indexOf(k.toLowerCase())+1)); return; }
+    else if(map.hasOwnProperty(k)) act=map[k];
+    else if(k==='^'){ e.preventDefault(); ins('^'); render(); save(); return; }
+    if(!act) return;
+    e.preventDefault();
+    var btn=document.querySelector('.k[data-k="'+act+'"]'); if(btn){ btn.classList.add('down'); setTimeout(function(){btn.classList.remove('down');},90); }
+    press(act);
+  });
+  document.addEventListener('visibilitychange',save);
+  window.addEventListener('pagehide',save);
+}
+function L_rows(){ return $('lcd')._rows; }
+
+load();
+buildKeys();
+bind();
+$('back').setAttribute('aria-hidden','true');
+render();
+})();
+</script>
+
+<script>if('serviceWorker' in navigator && location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</body>
+</html>

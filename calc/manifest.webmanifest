@@ -1,0 +1,16 @@
+{
+  "name": "総合換算ツール電卓 V1",
+  "short_name": "換算電卓",
+  "description": "dBm・dBμV・W・伝送値などの換算と現場計算をまとめた関数電卓風ツール",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0d0f",
+  "theme_color": "#1b1d20",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
