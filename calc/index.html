@@ -161,6 +161,14 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .help{font:400 12px/1.7 var(--f-ui);color:var(--muted)}
 .help b{color:var(--fg)}
 .plate{margin-top:18px;padding:12px;border:1px solid var(--line);border-radius:8px;font:500 11px/1.6 var(--f-ui);color:var(--muted);text-align:center;letter-spacing:.06em}
+.swt{font-size:clamp(40px,8.5vh,64px);text-align:center;font-weight:500;letter-spacing:.02em;font-variant-numeric:tabular-nums;margin:6px 0 2px;line-height:1.1}
+.swst{text-align:center;font:700 12px/1.4 var(--f-ui);color:var(--lcd-dim);letter-spacing:.1em}
+.swb{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px}
+.swb button{all:unset;cursor:pointer;text-align:center;padding:14px 0;border-radius:10px;font:700 17px/1 var(--f-ui);background:var(--lcd-inv);color:var(--lcd);box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.swb button.go{background:#24622f;color:#eaf7ea}
+.swb button.stop{background:#8a2a1f;color:#fff1ee}
+.swb button:active{transform:translateY(2px);box-shadow:none}
+.swb button:focus-visible{outline:2px solid var(--lcd-ink)}
 .confirm{font:600 12px/1.4 var(--f-ui);color:var(--warn)}
 </style>
 </head>
@@ -172,7 +180,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
   <section class="face front" id="front" aria-label="電卓">
    <div class="status" id="status"><span>50Ω</span><span>DEC</span><span>1-5V</span><span>目盛 0.0〜5.0</span></div>
    <div class="lcd" id="lcd" role="status" aria-live="polite"><div class="lcd-body"><div class="hint" style="color:var(--lcd-ink);font-size:14px;line-height:1.7"><b>このアプリでは計算機能が動きません。</b><br>ファイルビューアーやプレビュー画面ではプログラム(JavaScript)が止められています。<br>右上の「︙」→「アプリで開く」等から <b>Chrome</b> を選んで開いてください。</div></div></div>
-   <div class="keys" id="keys"><div class="kc"><div class="kl"></div><button type="button" class="k alt" data-k="tool" id="key-0-tool" aria-label="TOOL">TOOL</button></div><div class="kc"><div class="kl"></div><button type="button" class="k sh" data-k="shift" id="key-0-shift" aria-label="SHIFT">SHIFT</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="set" id="key-0-set" aria-label="⚙ 設定">⚙ 設定</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="bs" id="key-0-bs" aria-label="⌫ BS">⌫ BS</button></div><div class="kc"><div class="kl">AC</div><button type="button" class="k cl" data-k="clr" id="key-0-clr" aria-label="CLR / SHIFT: AC">CLR</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="pm" id="key-1-pm" aria-label="(−)">(−)</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="up" id="key-1-up" aria-label="▲">▲</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="down" id="key-1-down" aria-label="▼">▼</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="left" id="key-1-left" aria-label="◀">◀</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="right" id="key-1-right" aria-label="▶">▶</button></div><div class="kc"><div class="kl">50/75Ω</div><button type="button" class="k lt" data-k="dBm" id="key-2-dBm" aria-label="dBm / SHIFT: 50/75Ω">dBm</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="dBuV" id="key-2-dBuV" aria-label="dBμV">dBμV</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="W" id="key-2-W" aria-label="W">W</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="mW" id="key-2-mW" aria-label="mW">mW</button></div><div class="kc"><div class="kl">波長</div><button type="button" class="k lt jp" data-k="vswr" id="key-2-vswr" aria-label="VSWR / SHIFT: 波長">VSWR</button></div><div class="kc"><div class="kl">種別切替</div><button type="button" class="k lt jp" data-k="TX" id="key-3-TX" aria-label="伝送値 / SHIFT: 種別切替">伝送値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="IND" id="key-3-IND" aria-label="指示値">指示値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="PCT" id="key-3-PCT" aria-label="割合%">割合%</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="MA" id="key-3-MA" aria-label="電流mA">電流mA</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="V" id="key-3-V" aria-label="電圧V">電圧V</button></div><div class="kc"><div class="kl">xʸ</div><button type="button" class="k lt" data-k="sq" id="key-4-sq" aria-label="x² / SHIFT: xʸ">x²</button></div><div class="kc"><div class="kl">∛</div><button type="button" class="k lt" data-k="sqrt" id="key-4-sqrt" aria-label="√ / SHIFT: ∛">√</button></div><div class="kc"><div class="kl">ln</div><button type="button" class="k lt" data-k="log" id="key-4-log" aria-label="log / SHIFT: ln">log</button></div><div class="kc"><div class="kl">eˣ</div><button type="button" class="k lt" data-k="pow10" id="key-4-pow10" aria-label="10ˣ / SHIFT: eˣ">10ˣ</button></div><div class="kc"><div class="kl">π</div><button type="button" class="k lt" data-k="inv" id="key-4-inv" aria-label="x⁻¹ / SHIFT: π">x⁻¹</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="7" id="key-5-7" aria-label="7">7</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="8" id="key-5-8" aria-label="8">8</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="9" id="key-5-9" aria-label="9">9</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="(" id="key-5-_" aria-label="(">(</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k=")" id="key-5-_" aria-label=")">)</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="4" id="key-6-4" aria-label="4">4<span class="br">D</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="5" id="key-6-5" aria-label="5">5<span class="br">E</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="6" id="key-6-6" aria-label="6">6<span class="br">F</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="×" id="key-6-_" aria-label="×">×</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="÷" id="key-6-_" aria-label="÷">÷</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="1" id="key-7-1" aria-label="1">1<span class="br">A</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="2" id="key-7-2" aria-label="2">2<span class="br">B</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="3" id="key-7-3" aria-label="3">3<span class="br">C</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="+" id="key-7-_" aria-label="+">+</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="−" id="key-7-_" aria-label="−">−</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="0" id="key-8-0" aria-label="0">0</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="." id="key-8-_" aria-label="・">・</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="exp" id="key-8-exp" aria-label="Exp">Exp</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="ans" id="key-8-ans" aria-label="Ans">Ans</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="=" id="key-8-_" aria-label="=">=</button></div></div>
+   <div class="keys" id="keys"><div class="kc"><div class="kl">⏱計時</div><button type="button" class="k alt" data-k="tool" id="key-0-tool" aria-label="TOOL / SHIFT: ⏱計時">TOOL</button></div><div class="kc"><div class="kl"></div><button type="button" class="k sh" data-k="shift" id="key-0-shift" aria-label="SHIFT">SHIFT</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="set" id="key-0-set" aria-label="⚙ 設定">⚙ 設定</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="bs" id="key-0-bs" aria-label="⌫ BS">⌫ BS</button></div><div class="kc"><div class="kl">AC</div><button type="button" class="k cl" data-k="clr" id="key-0-clr" aria-label="CLR / SHIFT: AC">CLR</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="pm" id="key-1-pm" aria-label="(−)">(−)</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="up" id="key-1-up" aria-label="▲">▲</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="down" id="key-1-down" aria-label="▼">▼</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="left" id="key-1-left" aria-label="◀">◀</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="right" id="key-1-right" aria-label="▶">▶</button></div><div class="kc"><div class="kl">50/75Ω</div><button type="button" class="k lt" data-k="dBm" id="key-2-dBm" aria-label="dBm / SHIFT: 50/75Ω">dBm</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="dBuV" id="key-2-dBuV" aria-label="dBμV">dBμV</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="W" id="key-2-W" aria-label="W">W</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="mW" id="key-2-mW" aria-label="mW">mW</button></div><div class="kc"><div class="kl">波長</div><button type="button" class="k lt jp" data-k="vswr" id="key-2-vswr" aria-label="VSWR / SHIFT: 波長">VSWR</button></div><div class="kc"><div class="kl">種別切替</div><button type="button" class="k lt jp" data-k="TX" id="key-3-TX" aria-label="伝送値 / SHIFT: 種別切替">伝送値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="IND" id="key-3-IND" aria-label="指示値">指示値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="PCT" id="key-3-PCT" aria-label="割合%">割合%</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="MA" id="key-3-MA" aria-label="電流mA">電流mA</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="V" id="key-3-V" aria-label="電圧V">電圧V</button></div><div class="kc"><div class="kl">xʸ</div><button type="button" class="k lt" data-k="sq" id="key-4-sq" aria-label="x² / SHIFT: xʸ">x²</button></div><div class="kc"><div class="kl">∛</div><button type="button" class="k lt" data-k="sqrt" id="key-4-sqrt" aria-label="√ / SHIFT: ∛">√</button></div><div class="kc"><div class="kl">ln</div><button type="button" class="k lt" data-k="log" id="key-4-log" aria-label="log / SHIFT: ln">log</button></div><div class="kc"><div class="kl">eˣ</div><button type="button" class="k lt" data-k="pow10" id="key-4-pow10" aria-label="10ˣ / SHIFT: eˣ">10ˣ</button></div><div class="kc"><div class="kl">π</div><button type="button" class="k lt" data-k="inv" id="key-4-inv" aria-label="x⁻¹ / SHIFT: π">x⁻¹</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="7" id="key-5-7" aria-label="7">7</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="8" id="key-5-8" aria-label="8">8</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="9" id="key-5-9" aria-label="9">9</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="(" id="key-5-_" aria-label="(">(</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k=")" id="key-5-_" aria-label=")">)</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="4" id="key-6-4" aria-label="4">4<span class="br">D</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="5" id="key-6-5" aria-label="5">5<span class="br">E</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="6" id="key-6-6" aria-label="6">6<span class="br">F</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="×" id="key-6-_" aria-label="×">×</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="÷" id="key-6-_" aria-label="÷">÷</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="1" id="key-7-1" aria-label="1">1<span class="br">A</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="2" id="key-7-2" aria-label="2">2<span class="br">B</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="3" id="key-7-3" aria-label="3">3<span class="br">C</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="+" id="key-7-_" aria-label="+">+</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="−" id="key-7-_" aria-label="−">−</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="0" id="key-8-0" aria-label="0">0</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="." id="key-8-_" aria-label="・">・</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="exp" id="key-8-exp" aria-label="Exp">Exp</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="ans" id="key-8-ans" aria-label="Ans">Ans</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="=" id="key-8-_" aria-label="=">=</button></div></div>
   </section>
 
   <!-- ===== BACK (詳細設定) ===== -->
@@ -206,7 +214,7 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ================= 状態 ================= */
-var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc'};
+var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc',sw:{run:false,start:0,acc:0,laps:[]}};
 
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
 function load(){
@@ -218,6 +226,7 @@ function load(){
     Object.keys(S).forEach(function(k){ if(o[k]!==undefined) S[k]=o[k]; });
     S.set=set; S.shift=false; if(S.mode==='list') S.mode=S.prev||'calc';
     if(S.mode==='tool' && !TOOLS[S.tool]) S.mode='calc';
+    if(!S.sw||typeof S.sw!=='object') S.sw={run:false,start:0,acc:0,laps:[]};
   }catch(e){}
 }
 
@@ -512,7 +521,7 @@ var TOOLS={
    return {rows:[R('ネットワーク',ts(net)+'/'+c,1),R('サブネットマスク',ts(mask)),R('ブロードキャスト',ts(bc)),R('先頭ホスト',c<=30?ts(net+1):'N/A'),R('最終ホスト',c<=30?ts(bc-1):'N/A'),R('利用可能ホスト数',(c<=30?tot-2:tot).toLocaleString('ja-JP'),1),R('ワイルドカード',ts(wc))]};
   }}
 };
-var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4'];
+var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4','sw'];
 
 function tv(id){ if(!S.tv[id]) S.tv[id]={}; var v=S.tv[id]; TOOLS[id].fields.forEach(function(f){ if(v[f.k]===undefined) v[f.k]=f.def; }); return v; }
 function visFields(id){ var v=tv(id); return TOOLS[id].fields.filter(function(f){return !f.show||f.show(v);}); }
@@ -520,6 +529,7 @@ function optsOf(f,v){ return typeof f.opts==='function'?f.opts(v):f.opts; }
 function curField(){ var fs=visFields(S.tool); if(S.field>=fs.length) S.field=fs.length-1; if(S.field<0) S.field=0; return fs[S.field]; }
 function setV(f,val){ var v=tv(S.tool); v[f.k]=val; if(TOOLS[S.tool].change) TOOLS[S.tool].change(v,f.k); }
 function openTool(id,prefill){
+  if(id==='sw'){ openSw(); return; }
   S.prev=S.mode==='list'?S.prev:S.mode; S.mode='tool'; S.tool=id; S.field=0; S.fresh=true; tv(id);
   if(prefill){ var x=entryVal(); if(isFinite(x)&&S.entry.length){ S.tv[id][TOOLS[id].fields[0].k]=rawNum(x); S.field=1; } }
 }
@@ -626,7 +636,7 @@ function rebase(u,raw,hex){
 
 /* ================= キー定義 ================= */
 var KEYS=[
- [ {k:'tool',t:'TOOL',c:'alt'},{k:'shift',t:'SHIFT',c:'sh'},{k:'set',t:'⚙ 設定',c:'lt jp'},{k:'bs',t:'⌫ BS',c:'lt'},{k:'clr',t:'CLR',c:'cl',s:'AC'} ],
+ [ {k:'tool',t:'TOOL',c:'alt',s:'⏱計時'},{k:'shift',t:'SHIFT',c:'sh'},{k:'set',t:'⚙ 設定',c:'lt jp'},{k:'bs',t:'⌫ BS',c:'lt'},{k:'clr',t:'CLR',c:'cl',s:'AC'} ],
  [ {k:'pm',t:'(−)',c:'lt'},{k:'up',t:'▲',c:'lt'},{k:'down',t:'▼',c:'lt'},{k:'left',t:'◀',c:'lt'},{k:'right',t:'▶',c:'lt'} ],
  [ {k:'dBm',t:'dBm',c:'lt',s:'50/75Ω'},{k:'dBuV',t:'dBμV',c:'lt'},{k:'W',t:'W',c:'lt'},{k:'mW',t:'mW',c:'lt'},{k:'vswr',t:'VSWR',c:'lt jp',s:'波長'} ],
  [ {k:'TX',t:'伝送値',c:'lt jp',s:'種別切替'},{k:'IND',t:'指示値',c:'lt jp'},{k:'PCT',t:'割合%',c:'lt jp'},{k:'MA',t:'電流mA',c:'lt jp'},{k:'V',t:'電圧V',c:'lt jp'} ],
@@ -653,9 +663,10 @@ function buildKeys(){
 function press(k){
   var sh=S.shift; if(k!=='shift') S.shift=false;
   buzz();
+  if(S.mode==='sw'&&swKey(k,sh)){ render(); save(); return; }
   switch(k){
     case 'shift': S.shift=!sh; break;
-    case 'tool': if(S.mode==='list'){ S.mode=S.prev||'calc'; } else { S.prev=S.mode; S.mode='list'; } break;
+    case 'tool': if(sh){ openSw(); break; } if(S.mode==='list'){ S.mode=S.prev||'calc'; } else { S.prev=S.mode; S.mode='list'; } break;
     case 'set': openBack(); return;
     case 'clr': if(sh) allClear(); else clr(); break;
     case 'bs': bs(); break;
@@ -683,13 +694,32 @@ function press(k){
   render(); save();
 }
 
+/* ================= ストップウォッチ ================= */
+function swEl(){ var w=S.sw; return w.acc+(w.run?Math.max(0,Date.now()-w.start):0); }
+function fmtT(ms){ var cs=Math.floor(ms/10)%100, s=Math.floor(ms/1000)%60, m=Math.floor(ms/60000)%60, h=Math.floor(ms/3600000);
+  var p2=function(n){return (n<10?'0':'')+n;}; return (h?h+':'+p2(m):p2(m))+':'+p2(s)+'.'+p2(cs); }
+var wake=null;
+function wakeOn(){ try{ if(navigator.wakeLock&&!wake) navigator.wakeLock.request('screen').then(function(l){wake=l; l.addEventListener('release',function(){wake=null;});}).catch(function(){}); }catch(e){} }
+function wakeOff(){ try{ if(wake){ wake.release(); wake=null; } }catch(e){} }
+function openSw(){ if(S.mode!=='sw'&&S.mode!=='list') S.prev=S.mode; S.mode='sw'; if(S.sw.run) wakeOn(); }
+function swToggle(){ var w=S.sw; if(w.run){ w.acc+=Date.now()-w.start; w.run=false; S.ans=w.acc/1000; wakeOff(); } else { w.start=Date.now(); w.run=true; wakeOn(); } }
+function swLapReset(){ var w=S.sw; if(w.run){ var t=swEl(); w.laps.unshift(t); if(w.laps.length>99) w.laps.length=99; } else { w.acc=0; w.laps=[]; } }
+function swKey(k,sh){
+  if(k==='='){ swToggle(); return true; }
+  if(k==='+'){ swLapReset(); return true; }
+  if(k==='clr'&&!sh){ if(S.sw.run) return true; if(swEl()>0||S.sw.laps.length){ swLapReset(); } else { S.mode='calc'; } return true; }
+  if(/^\d$/.test(k)||['.','−','×','÷','(',')','bs','pm','up','down','left','right','exp','ans','sq','sqrt','log','pow10','inv'].indexOf(k)>=0) return true;
+  return false;
+}
+setInterval(function(){ if(S.mode==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); } },47);
+
 /* ================= 描画 ================= */
 function render(){
   // status
   var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx];
   $('status').innerHTML='<button type="button" data-go="imp">'+S.set.imp+'Ω</button><button type="button" data-go="tx">'+esc(t.short)+'</button><button type="button" data-go="v">'+(S.set.vmode==='15'?'1-5V':S.set.r+'Ω')+'</button><button type="button" data-go="sc">目盛 '+fx(+sc[0],1)+'〜'+fx(+sc[1],1)+'</button>';
   document.querySelectorAll('.k.sh').forEach(function(b){ b.classList.toggle('on',S.shift); });
-  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>';
+  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>'+(S.sw.run&&S.mode!=='sw'?'<span class="ind on">⏱</span>':'');
   var body='';
   if(S.mode==='calc'){
     top+='<span>COMP</span>'+(S.hi>=0?'<span>履歴 '+(S.hi+1)+'/'+S.hist.length+'</span>':'')+'<span class="grow"></span>';
@@ -711,8 +741,18 @@ function render(){
     L._rows=res?res.rows:null;
   } else if(S.mode==='list'){
     top+='<span>TOOL 一覧</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
-    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(TOOLS[id].name)+'</span><span class="v">'+TOOLS[id].fields.length+' 項目</span></div>'; }).join('')+'</div>';
+    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(id==='sw'?'ストップウォッチ':TOOLS[id].name)+'</span><span class="v">'+(id==='sw'?'計時':TOOLS[id].fields.length+' 項目')+'</span></div>'; }).join('')+'</div>';
     body+='<div class="note">数字キー・タップ・▲▼＋= で選択</div>';
+  } else if(S.mode==='sw'){
+    var w=S.sw, el=swEl();
+    top+='<span>ストップウォッチ</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    body+='<div class="swt" id="swTime">'+fmtT(el)+'</div>';
+    body+='<div class="swst">'+(w.run?'計測中':(el>0?'停止中':'待機中'))+'</div>';
+    body+='<div class="swb"><button type="button" data-sw="go" class="'+(w.run?'stop':'go')+'">'+(w.run?'ストップ':(el>0?'再開':'スタート'))+'</button><button type="button" data-sw="lap">'+(w.run?'ラップ':'リセット')+'</button></div>';
+    if(w.laps.length){
+      body+='<div class="rows">'+w.laps.map(function(t,i){ var prev=w.laps[i+1]||0; return '<div class="row static"><span class="l">ラップ '+(w.laps.length-i)+'　'+fmtT(t-prev)+'</span><span class="v">'+fmtT(t)+'</span></div>'; }).join('')+'</div>';
+    }
+    body+='<div class="note">= キーでスタート/ストップ ・ + キーでラップ ・ CLR でリセット<br>アプリを閉じても計測は続きます。停止すると秒数 ('+fx(el/1000,2)+' 秒) が Ans に入ります。</div>';
   } else if(S.mode==='tool'){
     var T=TOOLS[S.tool], v=tv(S.tool), fs=visFields(S.tool); curField();
     top+='<span>TOOL</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 終了</button>';
@@ -753,7 +793,7 @@ function renderBack(){
   h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
   h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
   h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
-  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>TOOL</b> : VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
+  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>TOOL</b> : VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>ストップウォッチ</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
   h+='<div class="sec"><h3>リセット</h3><div class="fr"><span>計算履歴 ('+S.hist.length+' 件)</span><button type="button" class="btn ghost" id="bHist">履歴を消去</button></div>';
   h+='<div class="fr"><span>すべての設定とツールの入力値</span><button type="button" class="btn danger" id="bReset">'+(resetArm?'もう一度押すと初期化':'初期値に戻す')+'</button></div></div>';
   h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
@@ -772,6 +812,7 @@ function bind(){
     openBack(); scrollToSec(g==='imp'?'sec-imp':g==='v'?'sec-v':'sec-tx');
   });
   $('lcd').addEventListener('click',function(e){
+    var sb=e.target.closest('[data-sw]'); if(sb){ buzz(); if(sb.getAttribute('data-sw')==='go') swToggle(); else swLapReset(); render(); save(); return; }
     var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
     var t=e.target.closest('[data-tool]'); if(t){ openTool(t.getAttribute('data-tool')); render(); save(); return; }
     var f=e.target.closest('[data-f]'); if(f){ var i=+f.getAttribute('data-f');
