@@ -302,6 +302,13 @@ function si(v,u){
   var a=Math.abs(v);
   for(var i=0;i<SIP.length;i++){ if(a>=SIP[i][0]*0.99995||i===SIP.length-1){ return (v/SIP[i][0]).toPrecision(5)+' '+SIP[i][1]+u; } }
 }
+function plainU(v,u){
+  if(!isFinite(v)) return '--';
+  if(v===0) return '0 '+u;
+  var a=Math.abs(v);
+  if(a>=1e-4&&a<1e7) return String(Number(v.toPrecision(6)))+' '+u;
+  var e=v.toExponential(4).split('e'); return String(Number(e[0]))+'×10^'+Number(e[1])+' '+u;
+}
 function pieces(str){ var out=[],i=0; while(i<str.length){ if(str.substr(i,2)==='⁻¹'){out.push('⁻¹');i+=2;} else {out.push(str[i]);i++;} } return out; }
 
 /* ================= 換算(RF / 伝送値) ================= */
@@ -315,8 +322,8 @@ function rfCalc(unit,x){
   return {rows:[
     {l:'電力 dBm',v:fx(dbm,2)+' dBm',u:'dBm',raw:dbm},
     {l:'電圧 dBμV',v:fx(dbm+o,2)+' dBμV',u:'dBuV',raw:dbm+o},
-    {l:'電力 W',v:si(w,'W'),u:'W',raw:w},
-    {l:'電力 mW',v:isFinite(mw)?Number(mw.toPrecision(6)).toString()+' mW':'--',u:'mW',raw:mw},
+    {l:'電力 W',v:plainU(w,'W'),u:'W',raw:w},
+    {l:'電力 mW',v:plainU(mw,'mW'),u:'mW',raw:mw},
     {l:'端子電圧 ('+S.set.imp+'Ω)',v:si(v,'V'),u:null}
   ],note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
 }
