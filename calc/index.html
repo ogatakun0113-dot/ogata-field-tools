@@ -554,6 +554,7 @@ function ins(p){
     S.entry = OPCONT.indexOf(p)>=0 ? pieces(rawNum(S.ans)) : [];
   }
   S.err=''; S.hi=-1;
+  if(p==='.'&&!/^[0-9A-F]$/.test(S.entry[S.entry.length-1]||'')) S.entry.push('0');
   S.entry.push(p);
 }
 function fieldInput(p){
@@ -564,6 +565,7 @@ function fieldInput(p){
   if(/^[A-F]$/.test(p)) return;
   var s=S.fresh?'':String(v[f.k]);
   if(S.fresh&&OPCONT.indexOf(p)>=0) s=String(v[f.k]);
+  if(p==='.'&&f.type!=='ip'&&(s===''||!/\d$/.test(s))) s+='0';
   s+=p; if(f.type==='code') s=s.slice(-3);
   setV(f,s); S.fresh=false;
 }
@@ -766,7 +768,7 @@ function render(){
     body+=fs.map(function(f,i){
       var val=v[f.k], disp;
       if(f.type==='opt'){ disp='<span class="opt">'+(f.col?'<span class="sw" style="background:'+COL[val].h+'"></span>':'')+esc(f.fmt?f.fmt(val):val)+'</span>'; }
-      else disp=esc(val===''?'—':val)+(i===S.field&&!S.fresh?'<span class="cursor"></span>':'')+(f.unit?' '+esc(f.unit):'');
+      else disp=esc(val===''?'—':String(val).replace(/(^|[^\d])\.(?=\d)/g,'$10.'))+(i===S.field&&!S.fresh?'<span class="cursor"></span>':'')+(f.unit?' '+esc(f.unit):'');
       return '<div class="fld'+(i===S.field?' act':'')+'" data-f="'+i+'"><span class="l">'+esc(f.label)+'</span><span class="v">'+disp+'</span></div>';
     }).join('');
     var r=T.calc(v)||{};
