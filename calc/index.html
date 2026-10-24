@@ -51,18 +51,17 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:8px;box-sizing:border-box;
   -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 *{box-sizing:border-box}
-.stage{height:100%;display:flex;justify-content:center;perspective:1600px}
-.flipper{position:relative;width:100%;max-width:460px;height:100%;transform-style:flat;transition:transform .55s cubic-bezier(.4,.1,.2,1)}
-.flipper.flipped{transform:rotateY(180deg)}
-.flipper.flipped,.flipper.flipping{transform-style:preserve-3d}
-.flipper:not(.flipped):not(.flipping) .back{visibility:hidden}
-.flipper:not(.flipping) .face{-webkit-backface-visibility:visible;backface-visibility:visible}
-.flipper.flipped:not(.flipping) .front{visibility:hidden}
-@media (prefers-reduced-motion:reduce){.flipper{transition:none}}
-.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:18px;
+.stage{height:100%;display:flex;justify-content:center}
+.flipper{position:relative;width:100%;max-width:460px;height:100%}
+.flipper.turn-out{animation:turnOut .2s ease-in forwards}
+.flipper.turn-in{animation:turnIn .22s ease-out}
+@keyframes turnOut{to{transform:scaleX(0)}}
+@keyframes turnIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){.flipper.turn-out,.flipper.turn-in{animation:none}}
+.face{position:absolute;inset:0;border-radius:18px;
   background:linear-gradient(180deg,var(--case-hi),var(--case) 18%);box-shadow:0 0 0 1px var(--line),0 20px 50px rgba(0,0,0,.55);overflow:hidden}
 .front{display:flex;flex-direction:column;padding:8px 6px 8px}
-.back{transform:rotateY(180deg);display:flex;flex-direction:column}
+.back{display:flex;flex-direction:column}
 
 /* ---- status strip ---- */
 .status{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:2px 8px 6px;font:600 clamp(11px,1.7vh,14px)/1 var(--f-ui);color:#fff;letter-spacing:.02em}
@@ -188,7 +187,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
   </section>
 
   <!-- ===== BACK (詳細設定) ===== -->
-  <section class="face back" id="back" aria-label="詳細設定">
+  <section class="face back" id="back" aria-label="詳細設定" hidden>
    <div class="bk-head">
     <div><h2>詳細設定</h2><small>BACK PANEL ・ 自動保存</small></div>
     <button class="btn" id="bkClose" type="button">電卓に戻る</button>
@@ -605,7 +604,10 @@ function equals(){
 }
 function pushHist(expr,v,p){ S.hist.unshift({e:expr,v:v,p:p}); if(S.hist.length>30) S.hist.length=30; S.hi=-1; }
 function upDown(d){
-  if(S.mode==='tool'){ var n=visFields(S.tool).length; S.field=(S.field+d+n)%n; S.fresh=true; return; }
+  if(S.mode==='tool'){ var n=visFields(S.tool).length, b=document.querySelector('#lcd .lcd-body');
+    if(b&&d>0&&S.field===n-1&&b.scrollTop+b.clientHeight<b.scrollHeight-2){ b.scrollTop+=b.clientHeight*0.7; S.noScroll=true; return; }
+    if(b&&d<0&&S.field===0&&b.scrollTop>0){ b.scrollTop=0; S.noScroll=true; return; }
+    S.field=(S.field+d+n)%n; S.fresh=true; return; }
   if(S.mode==='list'){ S.sel=(S.sel+d+TLIST.length)%TLIST.length; return; }
   if(S.mode==='conv'){ var g=RF.indexOf(S.unit)>=0?RF:TX, i=g.indexOf(S.unit); S.unit=g[(i+d+g.length)%g.length]; return; }
   if(!S.hist.length) return;
@@ -775,8 +777,12 @@ function render(){
     body+='<div class="note">▲▼/= 項目移動 ・ ◀▶ 選択肢・プリセット ・ 項目タップで選択</div>';
   }
   top+='</div>';
+  var ob=L.querySelector('.lcd-body'), keep=ob?ob.scrollTop:0, vkey=S.mode+'|'+(S.mode==='tool'?S.tool:'');
+  if(L._vkey!==vkey) keep=0; L._vkey=vkey;
   L.innerHTML=top+'<div class="lcd-body">'+body+'</div>';
-  var ab=L.querySelector('.fld.act')||L.querySelector('.list .row.me'); if(ab&&ab.scrollIntoView) ab.scrollIntoView({block:'nearest'});
+  var nb=L.querySelector('.lcd-body'); if(nb) nb.scrollTop=keep;
+  if(!S.noScroll){ var ab=L.querySelector('.fld.act')||L.querySelector('.list .row.me'); if(ab&&ab.scrollIntoView) ab.scrollIntoView({block:'nearest'}); }
+  S.noScroll=false;
 }
 
 /* ================= 裏画面 (設定) ================= */
@@ -803,9 +809,15 @@ function renderBack(){
   h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
   $('bkBody').innerHTML=h;
 }
-function flipAnim(){ var f=$('flipper'); f.classList.add('flipping'); clearTimeout(flipAnim.t); flipAnim.t=setTimeout(function(){ f.classList.remove('flipping'); },650); }
-function openBack(){ renderBack(); flipAnim(); $('flipper').classList.add('flipped'); $('front').setAttribute('aria-hidden','true'); $('back').removeAttribute('aria-hidden'); setTimeout(function(){ try{$('bkClose').focus({preventScroll:true});}catch(e){} },300); save(); }
-function closeBack(){ flipAnim(); $('flipper').classList.remove('flipped'); $('back').setAttribute('aria-hidden','true'); $('front').removeAttribute('aria-hidden'); resetArm=null; render(); save(); }
+function isBack(){ return !$('back').hidden; }
+function turn(toBack){
+  var f=$('flipper'), done=false;
+  var swap=function(){ if(done) return; done=true; $('back').hidden=!toBack; $('front').hidden=toBack; f.classList.remove('turn-out'); f.classList.add('turn-in'); setTimeout(function(){ f.classList.remove('turn-in'); },260); };
+  f.classList.remove('turn-in'); f.classList.add('turn-out');
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches) swap(); else setTimeout(swap,200);
+}
+function openBack(){ renderBack(); turn(true); setTimeout(function(){ try{$('bkClose').focus({preventScroll:true});}catch(e){} },300); save(); }
+function closeBack(){ turn(false); resetArm=null; render(); save(); }
 function scrollToSec(id){ setTimeout(function(){ var el=$(id); if(el) el.scrollIntoView({block:'start'}); },350); }
 
 /* ================= イベント ================= */
@@ -835,7 +847,7 @@ function bind(){
     if(e.target.id==='tRes'){ S.set.restore=!S.set.restore; renderBack(); save(); return; }
     if(e.target.id==='bHist'){ S.hist=[]; S.hi=-1; renderBack(); save(); return; }
     if(e.target.id==='bReset'){
-      if(!resetArm){ resetArm=setTimeout(function(){ resetArm=null; if($('flipper').classList.contains('flipped')) renderBack(); },4000); renderBack(); return; }
+      if(!resetArm){ resetArm=setTimeout(function(){ resetArm=null; if(isBack()) renderBack(); },4000); renderBack(); return; }
       clearTimeout(resetArm); resetArm=null; S.set=clone(DEF_SET); S.tv={}; allClear(); renderBack(); save(); return;
     }
   });
@@ -847,7 +859,7 @@ function bind(){
     save();
   });
   document.addEventListener('keydown',function(e){
-    if($('flipper').classList.contains('flipped')){ if(e.key==='Escape') closeBack(); return; }
+    if(isBack()){ if(e.key==='Escape') closeBack(); return; }
     if(e.ctrlKey||e.metaKey||e.altKey) return;
     var map={'Enter':'=','=':'=','Backspace':'bs','Escape':'clr','Delete':'clr','+':'+','-':'−','*':'×','/':'÷','(':'(',')':')','.':'.','^':null,'ArrowUp':'up','ArrowDown':'down','ArrowLeft':'left','ArrowRight':'right'};
     var k=e.key, act=null;
@@ -868,11 +880,11 @@ function L_rows(){ return $('lcd')._rows; }
 load();
 buildKeys();
 bind();
-$('back').setAttribute('aria-hidden','true');
+$('back').hidden=true;
 render();
 })();
 </script>
 
-<script>if('serviceWorker' in navigator && location.protocol==='https:'){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<script>if('serviceWorker' in navigator && location.protocol==='https:'){var hadCtl=!!navigator.serviceWorker.controller,reloaded=false;navigator.serviceWorker.addEventListener('controllerchange',function(){if(hadCtl&&!reloaded){reloaded=true;location.reload();}});window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').then(function(r){try{r.update();}catch(e){}}).catch(function(){});});}</script>
 </body>
 </html>
