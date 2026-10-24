@@ -322,14 +322,15 @@ function rfCalc(unit,x){
   else if(unit==='W') dbm=x>0?10*Math.log10(x*1000):NaN;
   else if(unit==='mW') dbm=x>0?10*Math.log10(x):NaN;
   var mw=Math.pow(10,dbm/10), w=mw/1000, v=Math.sqrt(w*S.set.imp);
+  var small=isFinite(w)&&w!==0&&Math.abs(w)<1e-3;
   var rows=[
     {l:'電力 dBm',v:fx(dbm,2)+' dBm',u:'dBm',raw:dbm},
     {l:'電圧 dBμV',v:fx(dbm+o,2)+' dBμV',u:'dBuV',raw:dbm+o},
-    {l:'電力 W',v:(unit==='W'||Math.abs(w)>=1e-3||w===0)?plainU(w,'W'):si(w,'W'),u:'W',raw:w},
-    {l:'電力 mW',v:unit==='mW'?plainU(mw,'mW'):si(w,'W'),u:'mW',raw:mw},
+    {l:'電力 W',v:small?si(w,'W'):plainU(w,'W'),u:'W',raw:w,auto:small},
+    {l:'電力 mW',v:small?si(w,'W'):plainU(mw,'mW'),u:'mW',raw:mw,auto:small},
     {l:'端子電圧 ('+S.set.imp+'Ω)',v:si(v,'V'),u:null}
   ];
-  var ps={}; rows.forEach(function(r){ if(r.u==='W'||r.u==='mW'){ var q=prefixOf(r.v,'W'); if(q) ps[q]=1; } });
+  var ps={}; rows.forEach(function(r){ if(r.auto){ var q=prefixOf(r.v,'W'); if(q) ps[q]=1; } });
   var un=Object.keys(ps).map(function(q){ return q+'W（'+PFX[q][0]+'ワット）= '+PFX[q][1]+' W'; }).join('　');
   return {rows:rows,unitNote:un,note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
 }
