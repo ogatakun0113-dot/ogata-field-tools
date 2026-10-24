@@ -322,7 +322,7 @@ function rfCalc(unit,x){
   return {rows:[
     {l:'電力 dBm',v:fx(dbm,2)+' dBm',u:'dBm',raw:dbm},
     {l:'電圧 dBμV',v:fx(dbm+o,2)+' dBμV',u:'dBuV',raw:dbm+o},
-    {l:'電力 W',v:plainU(w,'W'),u:'W',raw:w},
+    {l:'電力 W',v:(unit==='W'||Math.abs(w)>=1e-3||w===0)?plainU(w,'W'):si(w,'W'),u:'W',raw:w},
     {l:'電力 mW',v:unit==='mW'?plainU(mw,'mW'):si(w,'W'),u:'mW',raw:mw},
     {l:'端子電圧 ('+S.set.imp+'Ω)',v:si(v,'V'),u:null}
   ],note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
