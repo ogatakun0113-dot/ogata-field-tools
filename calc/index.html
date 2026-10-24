@@ -172,6 +172,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .swb button.stop{background:#8a2a1f;color:#fff1ee}
 .swb button:active{transform:translateY(2px);box-shadow:none}
 .swb button:focus-visible{outline:2px solid var(--lcd-ink)}
+.unote{margin-top:8px;padding:6px 8px;border:1px solid rgba(29,42,27,.45);border-radius:6px;font:700 14px/1.5 var(--f-ui);color:var(--lcd-ink);text-align:center}
 .confirm{font:600 12px/1.4 var(--f-ui);color:var(--warn)}
 </style>
 </head>
@@ -309,6 +310,8 @@ function plainU(v,u){
   if(a>=1e-4&&a<1e7) return String(Number(v.toPrecision(6)))+' '+u;
   var e=v.toExponential(4).split('e'); return String(Number(e[0]))+'×10^'+Number(e[1])+' '+u;
 }
+var PFX={k:['キロ','10³'],m:['ミリ','10⁻³'],'μ':['マイクロ','10⁻⁶'],n:['ナノ','10⁻⁹'],p:['ピコ','10⁻¹²'],f:['フェムト','10⁻¹⁵']};
+function prefixOf(txt,u){ var m=String(txt).match(new RegExp(' ([kmμnpf])'+u+'$')); return m?m[1]:null; }
 function pieces(str){ var out=[],i=0; while(i<str.length){ if(str.substr(i,2)==='⁻¹'){out.push('⁻¹');i+=2;} else {out.push(str[i]);i++;} } return out; }
 
 /* ================= 換算(RF / 伝送値) ================= */
@@ -319,13 +322,16 @@ function rfCalc(unit,x){
   else if(unit==='W') dbm=x>0?10*Math.log10(x*1000):NaN;
   else if(unit==='mW') dbm=x>0?10*Math.log10(x):NaN;
   var mw=Math.pow(10,dbm/10), w=mw/1000, v=Math.sqrt(w*S.set.imp);
-  return {rows:[
+  var rows=[
     {l:'電力 dBm',v:fx(dbm,2)+' dBm',u:'dBm',raw:dbm},
     {l:'電圧 dBμV',v:fx(dbm+o,2)+' dBμV',u:'dBuV',raw:dbm+o},
     {l:'電力 W',v:(unit==='W'||Math.abs(w)>=1e-3||w===0)?plainU(w,'W'):si(w,'W'),u:'W',raw:w},
     {l:'電力 mW',v:unit==='mW'?plainU(mw,'mW'):si(w,'W'),u:'mW',raw:mw},
     {l:'端子電圧 ('+S.set.imp+'Ω)',v:si(v,'V'),u:null}
-  ],note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
+  ];
+  var ps={}; rows.forEach(function(r){ if(r.u==='W'||r.u==='mW'){ var q=prefixOf(r.v,'W'); if(q) ps[q]=1; } });
+  var un=Object.keys(ps).map(function(q){ return q+'W（'+PFX[q][0]+'ワット）= '+PFX[q][1]+' W'; }).join('　');
+  return {rows:rows,unitNote:un,note:S.set.imp+'Ω系 : 0 dBm = 1 mW = '+o.toFixed(2)+' dBμV'};
 }
 function txCfg(){
   var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx], ma=S.set.ma;
@@ -752,6 +758,7 @@ function render(){
     var rows=res?res.rows:(isRF?rfCalc('dBm',NaN):txCalc('PCT',NaN)).rows.map(function(r){return {l:r.l,v:'--',u:r.u};});
     body+='<div class="rows">'+rows.map(function(r,i){ return '<div class="row'+(r.u===S.unit?' me':'')+(r.u?'':' static')+'" data-row="'+i+'"><span class="l">'+esc(r.l)+'</span><span class="v">'+esc(r.v)+'</span></div>'; }).join('')+'</div>';
     if(res&&res.warn) body+='<div class="warn">'+esc(res.warn)+'</div>';
+    if(res&&res.unitNote) body+='<div class="unote">'+esc(res.unitNote)+'</div>';
     body+='<div class="note">'+esc((res||(isRF?rfCalc('dBm',0):txCalc('PCT',0))).note)+' ・ 行をタップで入力単位を切替</div>';
     L._rows=res?res.rows:null;
   } else if(S.mode==='list'){
