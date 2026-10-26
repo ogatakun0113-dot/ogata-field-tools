@@ -451,7 +451,7 @@ var TOOLS={
    {k:'vrs',label:'実測 R-S (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
    {k:'vst',label:'実測 S-T (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
    {k:'vtr',label:'実測 T-R (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}}],
-  change:function(v,k){ if(k==='ph') v.v=v.ph==='3'?'200':(v.ph==='DC'?'24':'100'); },
+  change:function(v,k){ if(k==='ph') v.v=v.ph==='3'?'200':(v.ph==='DC'?'12':'100'); },
   calc:function(v){
    var dc=v.ph==='DC', k=v.ph==='3'?Math.sqrt(3):1, pf=dc?1:N(v,'pf'), V=N(v,'v'), P=N(v,'p'), I=N(v,'i'), note='';
    if(v.ph==='3'&&v.md!=='V'){ var ls=[N(v,'vrs'),N(v,'vst'),N(v,'vtr')].filter(function(x){return x>0;}); if(ls.length){V=ls.reduce(function(a,b){return a+b;},0)/ls.length; note='実測 '+ls.length+' 点の平均電圧 '+V.toFixed(1)+' V を使用';} }
