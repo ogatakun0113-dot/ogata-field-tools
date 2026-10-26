@@ -442,25 +442,28 @@ var TOOLS={
    return {rows:[R('受信電力',rx.toFixed(2)+' dBm',1),R('受信電圧',(rx+off()).toFixed(2)+' dBμV',1),R('送信出力',txd.toFixed(2)+' dBm'),R('給電線＋切替器損失','−'+cl.toFixed(2)+' dB'),R('アンテナ直下電力',ant.toFixed(2)+' dBm'),R('EIRP',eirp.toFixed(2)+' dBm'),R('自由空間伝搬損失','−'+fspl.toFixed(2)+' dB'),R('第1フレネル半径 (中央)',f1.toFixed(1)+' m')],note:'dBμV は '+S.set.imp+'Ω系で換算'};
   }},
  power:{name:'消費電力',fields:[
-   {k:'ph',label:'相',type:'opt',opts:['1','3'],fmt:function(x){return x==='3'?'三相 (3Φ3W)':'単相 (1Φ)';},def:'1'},
+   {k:'ph',label:'電源',type:'opt',opts:['1','3','DC'],fmt:function(x){return {'1':'単相 (1Φ)','3':'三相 (3Φ3W)','DC':'直流 (DC)'}[x];},def:'1'},
    {k:'md',label:'求めるもの',type:'opt',opts:['P','I','V'],fmt:function(x){return {P:'電力 P',I:'電流 I',V:'電圧 V'}[x];},def:'P'},
    {k:'v',label:'電圧 V',unit:'V',def:'100',show:function(v){return v.md!=='V';}},
    {k:'p',label:'電力 P',unit:'W',def:'2000',show:function(v){return v.md!=='P';}},
    {k:'i',label:'電流 I',unit:'A',def:'10',show:function(v){return v.md!=='I';}},
-   {k:'pf',label:'力率 cosφ',unit:'',def:'1.00',presets:['1.00','0.95','0.90','0.85','0.80']},
+   {k:'pf',label:'力率 cosφ',unit:'',def:'1.00',presets:['1.00','0.95','0.90','0.85','0.80'],show:function(v){return v.ph!=='DC';}},
    {k:'vrs',label:'実測 R-S (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
    {k:'vst',label:'実測 S-T (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}},
    {k:'vtr',label:'実測 T-R (任意)',unit:'V',def:'',show:function(v){return v.ph==='3'&&v.md!=='V';}}],
-  change:function(v,k){ if(k==='ph') v.v=v.ph==='3'?'200':'100'; },
+  change:function(v,k){ if(k==='ph') v.v=v.ph==='3'?'200':(v.ph==='DC'?'24':'100'); },
   calc:function(v){
-   var k=v.ph==='3'?Math.sqrt(3):1, pf=N(v,'pf'), V=N(v,'v'), P=N(v,'p'), I=N(v,'i'), note='';
+   var dc=v.ph==='DC', k=v.ph==='3'?Math.sqrt(3):1, pf=dc?1:N(v,'pf'), V=N(v,'v'), P=N(v,'p'), I=N(v,'i'), note='';
    if(v.ph==='3'&&v.md!=='V'){ var ls=[N(v,'vrs'),N(v,'vst'),N(v,'vtr')].filter(function(x){return x>0;}); if(ls.length){V=ls.reduce(function(a,b){return a+b;},0)/ls.length; note='実測 '+ls.length+' 点の平均電圧 '+V.toFixed(1)+' V を使用';} }
    if(!isFinite(pf)) return {warn:'力率を入力してください'};
    if(v.md==='P'){ if(!isFinite(V)||!isFinite(I)) return {warn:'電圧と電流を入力してください'}; P=k*V*I*pf; }
    else if(v.md==='I'){ if(!isFinite(P)||!isFinite(V)) return {warn:'電力と電圧を入力してください'}; var d=k*V*pf; I=d?Math.abs(P/d):0; }
    else { if(!isFinite(P)||!isFinite(I)) return {warn:'電力と電流を入力してください'}; var d2=k*I*pf; V=d2?Math.abs(P/d2):0; }
    var s=Math.abs(k*V*I);
-   return {rows:[R('電力 P',fx(P,2)+' W  ('+fx(P/1000,3)+' kW)',v.md==='P'),R('電流 I',fx(I,3)+' A',v.md==='I'),R('電圧 V',fx(V,1)+' V',v.md==='V'),R('力率',fx(pf,2)),R('皮相電力',fx(s,2)+' VA')],note:(v.ph==='3'?'P = √3・V・I・cosφ':'P = V・I・cosφ')+(note?' ・ '+note:'')};
+   var rows=[R('電力 P',fx(P,2)+' W  ('+fx(P/1000,3)+' kW)',v.md==='P'),R('電流 I',fx(I,3)+' A',v.md==='I'),R('電圧 V',fx(V,dc?2:1)+' V',v.md==='V')];
+   if(dc){ if(V>0) rows.push(R('負荷抵抗 (V÷I)',I?fx(V/I,2)+' Ω':'--')); }
+   else { rows.push(R('力率',fx(pf,2))); rows.push(R('皮相電力',fx(s,2)+' VA')); }
+   return {rows:rows,note:(dc?'P = V・I (直流)':(v.ph==='3'?'P = √3・V・I・cosφ':'P = V・I・cosφ'))+(note?' ・ '+note:'')};
   }},
  vdrop:{name:'ケーブル電圧降下',fields:[
    {k:'sys',label:'配電方式',type:'opt',opts:['1Φ2W','1Φ3W','3Φ3W'],fmt:function(x){return VDN[x];},def:'1Φ2W'},
