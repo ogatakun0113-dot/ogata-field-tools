@@ -174,6 +174,16 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .swb button:active{transform:translateY(2px);box-shadow:none}
 .swb button:focus-visible{outline:2px solid var(--lcd-ink)}
 .unote{margin-top:8px;padding:6px 8px;border:1px solid rgba(29,42,27,.45);border-radius:6px;font:700 14px/1.5 var(--f-ui);color:var(--lcd-ink);text-align:center}
+.swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
+.swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
+.swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
+.tmp{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin:4px 0}
+.tmp button{all:unset;cursor:pointer;text-align:center;padding:9px 0;border-radius:6px;font:700 13px/1 var(--f-ui);border:1px solid rgba(29,42,27,.45);color:var(--lcd-ink)}
+.tmp button:disabled{opacity:.35;cursor:default}
+.tmp button:active{background:rgba(29,42,27,.15)}
+.blink{animation:blinkT .8s steps(1) infinite;color:#7a1a10}
+@keyframes blinkT{50%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.blink{animation:none}}
 .confirm{font:600 12px/1.4 var(--f-ui);color:var(--warn)}
 </style>
 </head>
@@ -219,7 +229,7 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ================= 状態 ================= */
-var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc',sw:{run:false,start:0,acc:0,laps:[]}};
+var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc',sw:{run:false,start:0,acc:0,laps:[]},tm:{set:180000,remain:180000,run:false,end:0,inp:'',done:false},swm:'sw'};
 
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
 function load(){
@@ -232,6 +242,8 @@ function load(){
     S.set=set; S.shift=false; if(S.mode==='list') S.mode=S.prev||'calc';
     if(S.mode==='tool' && !TOOLS[S.tool]) S.mode='calc';
     if(!S.sw||typeof S.sw!=='object') S.sw={run:false,start:0,acc:0,laps:[]};
+    if(!S.tm||typeof S.tm!=='object') S.tm={set:180000,remain:180000,run:false,end:0,inp:'',done:false};
+    if(S.swm!=='tm') S.swm='sw';
   }catch(e){}
 }
 
@@ -557,7 +569,7 @@ var TOOLS={
    return {rows:[R('ネットワーク',ts(net)+'/'+c,1),R('サブネットマスク',ts(mask)),R('ブロードキャスト',ts(bc)),R('先頭ホスト',c<=30?ts(net+1):'N/A'),R('最終ホスト',c<=30?ts(bc-1):'N/A'),R('利用可能ホスト数',(c<=30?tot-2:tot).toLocaleString('ja-JP'),1),R('ワイルドカード',ts(wc))]};
   }}
 };
-var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4','sn','sw'];
+var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4','sn','sw','tm'];
 
 function tv(id){ if(!S.tv[id]) S.tv[id]={}; var v=S.tv[id]; TOOLS[id].fields.forEach(function(f){ if(v[f.k]===undefined) v[f.k]=f.def; if(f.type==='opt'&&optsOf(f,v).indexOf(v[f.k])<0) v[f.k]=f.def; }); return v; }
 function visFields(id){ var v=tv(id); return TOOLS[id].fields.filter(function(f){return !f.show||f.show(v);}); }
@@ -565,7 +577,7 @@ function optsOf(f,v){ return typeof f.opts==='function'?f.opts(v):f.opts; }
 function curField(){ var fs=visFields(S.tool); if(S.field>=fs.length) S.field=fs.length-1; if(S.field<0) S.field=0; return fs[S.field]; }
 function setV(f,val){ var v=tv(S.tool); v[f.k]=val; if(TOOLS[S.tool].change) TOOLS[S.tool].change(v,f.k); }
 function openTool(id,prefill){
-  if(id==='sw'){ openSw(); return; }
+  if(id==='sw'||id==='tm'){ S.swm=id; openSw(); return; }
   var fromMode=S.mode; S.prev=S.mode==='list'?S.prev:S.mode; S.mode='tool'; S.tool=id; S.field=0; S.fresh=true; tv(id);
   if(prefill&&(fromMode==='calc'||fromMode==='conv')){ var x=entryVal(); if(isFinite(x)&&S.entry.length){ var fs=visFields(id), fi=-1; for(var q=0;q<fs.length;q++){ if(!fs[q].type||fs[q].type==='num'){fi=q;break;} } if(fi>=0){ S.tv[id][fs[fi].k]=rawNum(x); S.field=Math.min(fi+1,fs.length-1); } } }
 }
@@ -743,17 +755,57 @@ function fmtT(ms){ var cs=Math.floor(ms/10)%100, s=Math.floor(ms/1000)%60, m=Mat
 var wake=null;
 function wakeOn(){ try{ if(navigator.wakeLock&&!wake) navigator.wakeLock.request('screen').then(function(l){wake=l; l.addEventListener('release',function(){wake=null;});}).catch(function(){}); }catch(e){} }
 function wakeOff(){ try{ if(wake){ wake.release(); wake=null; } }catch(e){} }
-function openSw(){ if(S.mode!=='sw'&&S.mode!=='list') S.prev=S.mode; S.mode='sw'; if(S.sw.run) wakeOn(); }
+function openSw(){ if(S.mode!=='sw'&&S.mode!=='list') S.prev=S.mode; S.mode='sw'; if(S.sw.run||S.tm.run) wakeOn(); }
 function swToggle(){ var w=S.sw; if(w.run){ w.acc+=Date.now()-w.start; w.run=false; S.ans=w.acc/1000; wakeOff(); } else { w.start=Date.now(); w.run=true; wakeOn(); } }
 function swLapReset(){ var w=S.sw; if(w.run){ var t=swEl(); w.laps.unshift(t); if(w.laps.length>99) w.laps.length=99; } else { w.acc=0; w.laps=[]; } }
+/* ---- タイマー ---- */
+function tmRem(){ var t=S.tm; return t.run?Math.max(0,t.end-Date.now()):t.remain; }
+function fmtTm(ms){ var sec=Math.ceil(ms/1000), h=Math.floor(sec/3600), m=Math.floor(sec/60)%60, s2=sec%60; var p2=function(n){return (n<10?'0':'')+n;}; return (h?h+':'+p2(m):p2(m))+':'+p2(s2); }
+function tmFromInp(str){ var d=('000000'+str).slice(-6); return ((+d.slice(0,2))*3600+(+d.slice(2,4))*60+(+d.slice(4,6)))*1000; }
+var actx=null, alarmT=null, alarmN=0;
+function audioPrep(){ try{ if(!actx){ var AC=window.AudioContext||window.webkitAudioContext; if(AC) actx=new AC(); } if(actx&&actx.state==='suspended') actx.resume(); }catch(e){} }
+function beep(t0,f,d){ try{ var o=actx.createOscillator(), g=actx.createGain(); o.type='square'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.25,t0+0.01); g.gain.setValueAtTime(0.25,t0+d-0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+d); o.connect(g); g.connect(actx.destination); o.start(t0); o.stop(t0+d+0.02); }catch(e){} }
+function alarmStart(){
+  alarmStop(); alarmN=0;
+  var ring=function(){ alarmN++; if(actx){ var t=actx.currentTime+0.02; beep(t,2048,0.12); beep(t+0.2,2048,0.12); beep(t+0.4,2048,0.12); } try{ if(navigator.vibrate) navigator.vibrate([250,120,250,120,250]); }catch(e){} if(alarmN>=20) alarmStop(); };
+  ring(); alarmT=setInterval(ring,1200);
+}
+function alarmStop(){ if(alarmT){ clearInterval(alarmT); alarmT=null; } try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){} }
+function tmToggle(){
+  var t=S.tm; alarmStop(); audioPrep();
+  if(t.run){ t.remain=Math.max(0,t.end-Date.now()); t.run=false; wakeOff(); }
+  else { if(t.done||t.remain<=0){ t.remain=t.set; t.done=false; } if(t.remain>0){ t.end=Date.now()+t.remain; t.run=true; t.inp=''; wakeOn(); } }
+}
+function tmReset(){ var t=S.tm; alarmStop(); if(t.run) return; if(t.done||t.remain!==t.set){ t.remain=t.set; t.done=false; } else { t.set=0; t.remain=0; } t.inp=''; }
+function tmSet(ms){ var t=S.tm; if(t.run) return; alarmStop(); t.set=ms; t.remain=ms; t.done=false; t.inp=''; }
+function tmKey(k,sh){
+  var t=S.tm;
+  if(alarmT&&k!=='tool'&&k!=='set'){ alarmStop(); if(k!=='=') return true; }
+  if(k==='='){ tmToggle(); return true; }
+  if(k==='clr'&&!sh){ if(!t.run&&t.set===0&&t.remain===0){ S.mode='calc'; } else tmReset(); return true; }
+  if(/^\d$/.test(k)&&!t.run){ if(t.inp.length<6){ t.inp+=k; t.set=t.remain=tmFromInp(t.inp); t.done=false; } return true; }
+  if(k==='bs'&&!t.run){ t.inp=t.inp.slice(0,-1); t.set=t.remain=tmFromInp(t.inp); t.done=false; return true; }
+  if(k==='left'||k==='right'){ S.swm='sw'; return true; }
+  if(['.','−','×','÷','(',')','+','pm','up','down','exp','ans','sq','sqrt','log','pow10','inv','bs'].indexOf(k)>=0||/^\d$/.test(k)) return true;
+  return false;
+}
 function swKey(k,sh){
+  if(S.swm==='tm') return tmKey(k,sh);
+  if(k==='left'||k==='right'){ S.swm='tm'; return true; }
   if(k==='='){ swToggle(); return true; }
   if(k==='+'){ swLapReset(); return true; }
   if(k==='clr'&&!sh){ if(S.sw.run) return true; if(swEl()>0||S.sw.laps.length){ swLapReset(); } else { S.mode='calc'; } return true; }
   if(/^\d$/.test(k)||['.','−','×','÷','(',')','bs','pm','up','down','left','right','exp','ans','sq','sqrt','log','pow10','inv'].indexOf(k)>=0) return true;
   return false;
 }
-setInterval(function(){ if(S.mode==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); } },47);
+setInterval(function(){
+  if(S.mode==='sw'&&S.swm==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); }
+  var t=S.tm;
+  if(t.run){
+    if(Date.now()>=t.end){ t.run=false; t.remain=0; t.done=true; wakeOff(); if(S.mode!=='sw'){ S.prev=S.mode; } S.mode='sw'; S.swm='tm'; alarmStart(); render(); save(); }
+    else if(S.mode==='sw'&&S.swm==='tm'){ var e2=$('tmTime'); if(e2) e2.textContent=fmtTm(tmRem()); }
+  }
+},100);
 
 /* ================= 描画 ================= */
 function render(){
@@ -761,7 +813,7 @@ function render(){
   var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx];
   $('status').innerHTML='<button type="button" data-go="imp">'+S.set.imp+'Ω</button><button type="button" data-go="tx">'+esc(t.short)+'</button><button type="button" data-go="v">'+(S.set.vmode==='15'?'1-5V':S.set.r+'Ω')+'</button><button type="button" data-go="sc">目盛 '+fx(+sc[0],1)+'〜'+fx(+sc[1],1)+'</button>';
   document.querySelectorAll('.k.sh').forEach(function(b){ b.classList.toggle('on',S.shift); });
-  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>'+(S.sw.run&&S.mode!=='sw'?'<span class="ind on">⏱</span>':'');
+  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>'+(S.sw.run&&!(S.mode==='sw'&&S.swm==='sw')?'<span class="ind on">⏱</span>':'')+(S.tm.run&&!(S.mode==='sw'&&S.swm==='tm')?'<span class="ind on">⏲ '+fmtTm(tmRem())+'</span>':'');
   var body='';
   if(S.mode==='calc'){
     top+='<span>COMP</span>'+(S.hi>=0?'<span>履歴 '+(S.hi+1)+'/'+S.hist.length+'</span>':'')+'<span class="grow"></span>';
@@ -784,11 +836,21 @@ function render(){
     L._rows=res?res.rows:null;
   } else if(S.mode==='list'){
     top+='<span>TOOL 一覧</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
-    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(id==='sw'?'ストップウォッチ':TOOLS[id].name)+'</span><span class="v">'+(id==='sw'?'計時':TOOLS[id].fields.length+' 項目')+'</span></div>'; }).join('')+'</div>';
+    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(id==='sw'?'ストップウォッチ':id==='tm'?'タイマー':TOOLS[id].name)+'</span><span class="v">'+(id==='sw'||id==='tm'?'計時':TOOLS[id].fields.length+' 項目')+'</span></div>'; }).join('')+'</div>';
     body+='<div class="note">数字キー・タップ・▲▼＋= で選択</div>';
+  } else if(S.mode==='sw'&&S.swm==='tm'){
+    var tt=S.tm, rm=tmRem();
+    top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    body+='<div class="swtab"><button type="button" data-swm="sw">ストップウォッチ</button><button type="button" data-swm="tm" class="on">タイマー</button></div>';
+    body+='<div class="swt'+(tt.done?' blink':'')+'" id="tmTime">'+fmtTm(rm)+'</div>';
+    body+='<div class="swst">'+(tt.done?'時間です！':(tt.run?'カウントダウン中':(rm>0&&rm<tt.set?'一時停止中':(tt.set>0?'待機中 ・ セット '+fmtTm(tt.set):'数字キーで時間をセット'))))+'</div>';
+    body+='<div class="swb"><button type="button" data-tm="go" class="'+(tt.run?'stop':'go')+'">'+(tt.run?'ストップ':(tt.done?'もう一度':(rm>0&&rm<tt.set?'再開':'スタート')))+'</button><button type="button" data-tm="reset">'+(tt.done||(!tt.run&&rm!==tt.set)?'リセット':'クリア')+'</button></div>';
+    body+='<div class="tmp">'+[[60,'1分'],[180,'3分'],[300,'5分'],[600,'10分'],[1800,'30分'],[3600,'60分']].map(function(q){ return '<button type="button" data-tmp="'+q[0]+'"'+(tt.run?' disabled':'')+'>'+q[1]+'</button>'; }).join('')+'</div>';
+    body+='<div class="note">数字キーで時間をセット (例: 1 3 0 → 01:30、1 0 0 0 0 → 1:00:00)。= でスタート/ストップ、CLR でリセット。<br>アプリを開いている間は、0 になると音と振動でお知らせします。閉じている間は鳴りません (次に開いたとき表示します)。</div>';
   } else if(S.mode==='sw'){
     var w=S.sw, el=swEl();
-    top+='<span>ストップウォッチ</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    body+='<div class="swtab"><button type="button" data-swm="sw" class="on">ストップウォッチ</button><button type="button" data-swm="tm">タイマー</button></div>';
     body+='<div class="swt" id="swTime">'+fmtT(el)+'</div>';
     body+='<div class="swst">'+(w.run?'計測中':(el>0?'停止中':'待機中'))+'</div>';
     body+='<div class="swb"><button type="button" data-sw="go" class="'+(w.run?'stop':'go')+'">'+(w.run?'ストップ':(el>0?'再開':'スタート'))+'</button><button type="button" data-sw="lap">'+(w.run?'ラップ':'リセット')+'</button></div>';
@@ -840,7 +902,7 @@ function renderBack(){
   h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
   h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
   h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
-  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>ストップウォッチ</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
+  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>ストップウォッチ・タイマー</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。上のタブか ◀▶ で切替。タイマーは数字キーで時間をセット。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
   h+='<div class="sec"><h3>リセット</h3><div class="fr"><span>計算履歴 ('+S.hist.length+' 件)</span><button type="button" class="btn ghost" id="bHist">履歴を消去</button></div>';
   h+='<div class="fr"><span>すべての設定とツールの入力値</span><button type="button" class="btn danger" id="bReset">'+(resetArm?'もう一度押すと初期化':'初期値に戻す')+'</button></div></div>';
   h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
@@ -866,6 +928,9 @@ function bind(){
     openBack(); scrollToSec(g==='imp'?'sec-imp':g==='v'?'sec-v':'sec-tx');
   });
   $('lcd').addEventListener('click',function(e){
+    var sm=e.target.closest('[data-swm]'); if(sm){ buzz(); S.swm=sm.getAttribute('data-swm'); render(); save(); return; }
+    var tb=e.target.closest('[data-tm]'); if(tb){ buzz(); if(tb.getAttribute('data-tm')==='go') tmToggle(); else tmReset(); render(); save(); return; }
+    var tp=e.target.closest('[data-tmp]'); if(tp){ buzz(); tmSet(+tp.getAttribute('data-tmp')*1000); render(); save(); return; }
     var sb=e.target.closest('[data-sw]'); if(sb){ buzz(); if(sb.getAttribute('data-sw')==='go') swToggle(); else swLapReset(); render(); save(); return; }
     var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
     var t=e.target.closest('[data-tool]'); if(t){ openTool(t.getAttribute('data-tool')); render(); save(); return; }
