@@ -174,6 +174,19 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .swb button:active{transform:translateY(2px);box-shadow:none}
 .swb button:focus-visible{outline:2px solid var(--lcd-ink)}
 .unote{margin-top:8px;padding:6px 8px;border:1px solid rgba(29,42,27,.45);border-radius:6px;font:700 14px/1.5 var(--f-ui);color:var(--lcd-ink);text-align:center}
+.gst{display:flex;align-items:center;gap:6px;font:700 12px/1.4 var(--f-ui);margin:2px 0 4px}
+.gst .dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--lcd-ink);flex:none}
+.gst .dot.ok{background:var(--lcd-ink)}
+.gtop{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:6px;align-items:center;color:var(--lcd-ink)}
+.gsvg{width:100%;height:auto;display:block}
+.gside{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.csvg{width:100%;max-width:120px;height:auto;display:block}
+.gk{font:600 11px/1.3 var(--f-ui);color:var(--lcd-dim);display:block}
+.gv{font-size:clamp(14px,2.2vh,17px);font-variant-numeric:tabular-nums;display:block}
+.gv.big{font-size:clamp(18px,3vh,24px);font-weight:700}
+.ggrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:4px 0 2px;padding:4px 4px;border-top:1px dashed rgba(29,42,27,.35);border-bottom:1px dashed rgba(29,42,27,.35)}
+.swb button:disabled{opacity:.4;cursor:default}
+.glink{display:block;text-align:center;margin:4px 0;font:700 13px/1.6 var(--f-ui);color:var(--lcd-ink)}
 .swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
 .swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
 .swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
@@ -195,7 +208,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
   <section class="face front" id="front" aria-label="電卓">
    <div class="status" id="status"><span>50Ω</span><span>DEC</span><span>1-5V</span><span>目盛 0.0〜5.0</span></div>
    <div class="lcd" id="lcd" role="status" aria-live="polite"><div class="lcd-brand">西菱電機フィールディング　緒方</div><div class="lcd-body"><div class="hint" style="color:var(--lcd-ink);font-size:14px;line-height:1.7"><b>このアプリでは計算機能が動きません。</b><br>ファイルビューアーやプレビュー画面ではプログラム(JavaScript)が止められています。<br>右上の「︙」→「アプリで開く」等から <b>Chrome</b> を選んで開いてください。</div></div></div>
-   <div class="keys" id="keys"><div class="kc"><div class="kl">⏱計時</div><button type="button" class="k alt" data-k="tool" id="key-0-tool" aria-label="TOOL / SHIFT: ⏱計時">TOOL</button></div><div class="kc"><div class="kl"></div><button type="button" class="k sh" data-k="shift" id="key-0-shift" aria-label="SHIFT">SHIFT</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="set" id="key-0-set" aria-label="⚙ 設定">⚙ 設定</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="bs" id="key-0-bs" aria-label="⌫ BS">⌫ BS</button></div><div class="kc"><div class="kl">AC</div><button type="button" class="k cl" data-k="clr" id="key-0-clr" aria-label="CLR / SHIFT: AC">CLR</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="pm" id="key-1-pm" aria-label="(−)">(−)</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="up" id="key-1-up" aria-label="▲">▲</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="down" id="key-1-down" aria-label="▼">▼</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="left" id="key-1-left" aria-label="◀">◀</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="right" id="key-1-right" aria-label="▶">▶</button></div><div class="kc"><div class="kl">50/75Ω</div><button type="button" class="k lt" data-k="dBm" id="key-2-dBm" aria-label="dBm / SHIFT: 50/75Ω">dBm</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="dBuV" id="key-2-dBuV" aria-label="dBμV">dBμV</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="W" id="key-2-W" aria-label="W">W</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="sn" id="key-2-sn" aria-label="S/N">S/N</button></div><div class="kc"><div class="kl">波長</div><button type="button" class="k lt jp" data-k="vswr" id="key-2-vswr" aria-label="VSWR / SHIFT: 波長">VSWR</button></div><div class="kc"><div class="kl">種別切替</div><button type="button" class="k lt jp" data-k="TX" id="key-3-TX" aria-label="伝送値 / SHIFT: 種別切替">伝送値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="IND" id="key-3-IND" aria-label="指示値">指示値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="PCT" id="key-3-PCT" aria-label="割合%">割合%</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="MA" id="key-3-MA" aria-label="電流mA">電流mA</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="V" id="key-3-V" aria-label="電圧V">電圧V</button></div><div class="kc"><div class="kl">xʸ</div><button type="button" class="k lt" data-k="sq" id="key-4-sq" aria-label="x² / SHIFT: xʸ">x²</button></div><div class="kc"><div class="kl">∛</div><button type="button" class="k lt" data-k="sqrt" id="key-4-sqrt" aria-label="√ / SHIFT: ∛">√</button></div><div class="kc"><div class="kl">ln</div><button type="button" class="k lt" data-k="log" id="key-4-log" aria-label="log / SHIFT: ln">log</button></div><div class="kc"><div class="kl">eˣ</div><button type="button" class="k lt" data-k="pow10" id="key-4-pow10" aria-label="10ˣ / SHIFT: eˣ">10ˣ</button></div><div class="kc"><div class="kl">π</div><button type="button" class="k lt" data-k="inv" id="key-4-inv" aria-label="x⁻¹ / SHIFT: π">x⁻¹</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="7" id="key-5-7" aria-label="7">7</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="8" id="key-5-8" aria-label="8">8</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="9" id="key-5-9" aria-label="9">9</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="(" id="key-5-_" aria-label="(">(</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k=")" id="key-5-_" aria-label=")">)</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="4" id="key-6-4" aria-label="4">4<span class="br">D</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="5" id="key-6-5" aria-label="5">5<span class="br">E</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="6" id="key-6-6" aria-label="6">6<span class="br">F</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="×" id="key-6-_" aria-label="×">×</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="÷" id="key-6-_" aria-label="÷">÷</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="1" id="key-7-1" aria-label="1">1<span class="br">A</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="2" id="key-7-2" aria-label="2">2<span class="br">B</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="3" id="key-7-3" aria-label="3">3<span class="br">C</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="+" id="key-7-_" aria-label="+">+</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="−" id="key-7-_" aria-label="−">−</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="0" id="key-8-0" aria-label="0">0</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="." id="key-8-_" aria-label="・">・</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="exp" id="key-8-exp" aria-label="Exp">Exp</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="ans" id="key-8-ans" aria-label="Ans">Ans</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="=" id="key-8-_" aria-label="=">=</button></div></div>
+   <div class="keys" id="keys"><div class="kc"><div class="kl">⏱計時</div><button type="button" class="k alt" data-k="tool" id="key-0-tool" aria-label="TOOL / SHIFT: ⏱計時">TOOL</button></div><div class="kc"><div class="kl"></div><button type="button" class="k sh" data-k="shift" id="key-0-shift" aria-label="SHIFT">SHIFT</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="set" id="key-0-set" aria-label="⚙ 設定">⚙ 設定</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="bs" id="key-0-bs" aria-label="⌫ BS">⌫ BS</button></div><div class="kc"><div class="kl">AC</div><button type="button" class="k cl" data-k="clr" id="key-0-clr" aria-label="CLR / SHIFT: AC">CLR</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="pm" id="key-1-pm" aria-label="(−)">(−)</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="up" id="key-1-up" aria-label="▲">▲</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="down" id="key-1-down" aria-label="▼">▼</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="left" id="key-1-left" aria-label="◀">◀</button></div><div class="kc"><div class="kl none"></div><button type="button" class="k lt" data-k="right" id="key-1-right" aria-label="▶">▶</button></div><div class="kc"><div class="kl">50/75Ω</div><button type="button" class="k lt" data-k="dBm" id="key-2-dBm" aria-label="dBm / SHIFT: 50/75Ω">dBm</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="dBuV" id="key-2-dBuV" aria-label="dBμV">dBμV</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt" data-k="W" id="key-2-W" aria-label="W">W</button></div><div class="kc"><div class="kl">GPS</div><button type="button" class="k lt" data-k="sn" id="key-2-sn" aria-label="S/N / SHIFT: GPS">S/N</button></div><div class="kc"><div class="kl">波長</div><button type="button" class="k lt jp" data-k="vswr" id="key-2-vswr" aria-label="VSWR / SHIFT: 波長">VSWR</button></div><div class="kc"><div class="kl">種別切替</div><button type="button" class="k lt jp" data-k="TX" id="key-3-TX" aria-label="伝送値 / SHIFT: 種別切替">伝送値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="IND" id="key-3-IND" aria-label="指示値">指示値</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="PCT" id="key-3-PCT" aria-label="割合%">割合%</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="MA" id="key-3-MA" aria-label="電流mA">電流mA</button></div><div class="kc"><div class="kl"></div><button type="button" class="k lt jp" data-k="V" id="key-3-V" aria-label="電圧V">電圧V</button></div><div class="kc"><div class="kl">xʸ</div><button type="button" class="k lt" data-k="sq" id="key-4-sq" aria-label="x² / SHIFT: xʸ">x²</button></div><div class="kc"><div class="kl">∛</div><button type="button" class="k lt" data-k="sqrt" id="key-4-sqrt" aria-label="√ / SHIFT: ∛">√</button></div><div class="kc"><div class="kl">ln</div><button type="button" class="k lt" data-k="log" id="key-4-log" aria-label="log / SHIFT: ln">log</button></div><div class="kc"><div class="kl">eˣ</div><button type="button" class="k lt" data-k="pow10" id="key-4-pow10" aria-label="10ˣ / SHIFT: eˣ">10ˣ</button></div><div class="kc"><div class="kl">π</div><button type="button" class="k lt" data-k="inv" id="key-4-inv" aria-label="x⁻¹ / SHIFT: π">x⁻¹</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="7" id="key-5-7" aria-label="7">7</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="8" id="key-5-8" aria-label="8">8</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="9" id="key-5-9" aria-label="9">9</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="(" id="key-5-_" aria-label="(">(</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k=")" id="key-5-_" aria-label=")">)</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="4" id="key-6-4" aria-label="4">4<span class="br">D</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="5" id="key-6-5" aria-label="5">5<span class="br">E</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="6" id="key-6-6" aria-label="6">6<span class="br">F</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="×" id="key-6-_" aria-label="×">×</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="÷" id="key-6-_" aria-label="÷">÷</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="1" id="key-7-1" aria-label="1">1<span class="br">A</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="2" id="key-7-2" aria-label="2">2<span class="br">B</span></button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="3" id="key-7-3" aria-label="3">3<span class="br">C</span></button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="+" id="key-7-_" aria-label="+">+</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="−" id="key-7-_" aria-label="−">−</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="0" id="key-8-0" aria-label="0">0</button></div><div class="kc dkrow"><button type="button" class="k dk" data-k="." id="key-8-_" aria-label="・">・</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="exp" id="key-8-exp" aria-label="Exp">Exp</button></div><div class="kc dkrow"><button type="button" class="k dk sm" data-k="ans" id="key-8-ans" aria-label="Ans">Ans</button></div><div class="kc dkrow"><button type="button" class="k dk op" data-k="=" id="key-8-_" aria-label="=">=</button></div></div>
   </section>
 
   <!-- ===== BACK (詳細設定) ===== -->
@@ -229,7 +242,7 @@ function $(id){return document.getElementById(id);}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 
 /* ================= 状態 ================= */
-var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc',sw:{run:false,start:0,acc:0,laps:[]},tm:{set:180000,remain:180000,run:false,end:0,inp:'',done:false},swm:'sw'};
+var S={set:clone(DEF_SET),mode:'calc',entry:[],justEval:false,ans:0,lastExpr:'',err:'',unit:'dBm',tool:null,field:0,fresh:true,tv:{},hist:[],hi:-1,sel:0,shift:false,prev:'calc',sw:{run:false,start:0,acc:0,laps:[]},tm:{set:180000,remain:180000,run:false,end:0,inp:'',done:false},swm:'sw',gps:{pt:null,dist:0,max:0,t0:0,on:false}};
 
 function save(){try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){}}
 function load(){
@@ -242,6 +255,8 @@ function load(){
     S.set=set; S.shift=false; if(S.mode==='list') S.mode=S.prev||'calc';
     if(S.mode==='tool' && !TOOLS[S.tool]) S.mode='calc';
     if(!S.sw||typeof S.sw!=='object') S.sw={run:false,start:0,acc:0,laps:[]};
+    if(!S.gps||typeof S.gps!=='object') S.gps={pt:null,dist:0,max:0,t0:0,on:false};
+    S.gps.on=false;
     if(!S.tm||typeof S.tm!=='object') S.tm={set:180000,remain:180000,run:false,end:0,inp:'',done:false};
     if(S.swm!=='tm') S.swm='sw';
   }catch(e){}
@@ -569,7 +584,7 @@ var TOOLS={
    return {rows:[R('ネットワーク',ts(net)+'/'+c,1),R('サブネットマスク',ts(mask)),R('ブロードキャスト',ts(bc)),R('先頭ホスト',c<=30?ts(net+1):'N/A'),R('最終ホスト',c<=30?ts(bc-1):'N/A'),R('利用可能ホスト数',(c<=30?tot-2:tot).toLocaleString('ja-JP'),1),R('ワイルドカード',ts(wc))]};
   }}
 };
-var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4','sn','sw','tm'];
+var TLIST=['vswr','wave','coax','link','power','vdrop','batt','ohm','area','mass','resist','cap','ipv4','sn','gps','sw','tm'];
 
 function tv(id){ if(!S.tv[id]) S.tv[id]={}; var v=S.tv[id]; TOOLS[id].fields.forEach(function(f){ if(v[f.k]===undefined) v[f.k]=f.def; if(f.type==='opt'&&optsOf(f,v).indexOf(v[f.k])<0) v[f.k]=f.def; }); return v; }
 function visFields(id){ var v=tv(id); return TOOLS[id].fields.filter(function(f){return !f.show||f.show(v);}); }
@@ -578,6 +593,7 @@ function curField(){ var fs=visFields(S.tool); if(S.field>=fs.length) S.field=fs
 function setV(f,val){ var v=tv(S.tool); v[f.k]=val; if(TOOLS[S.tool].change) TOOLS[S.tool].change(v,f.k); }
 function openTool(id,prefill){
   if(id==='sw'||id==='tm'){ S.swm=id; openSw(); return; }
+  if(id==='gps'){ openGps(); return; }
   var fromMode=S.mode; S.prev=S.mode==='list'?S.prev:S.mode; S.mode='tool'; S.tool=id; S.field=0; S.fresh=true; tv(id);
   if(prefill&&(fromMode==='calc'||fromMode==='conv')){ var x=entryVal(); if(isFinite(x)&&S.entry.length){ var fs=visFields(id), fi=-1; for(var q=0;q<fs.length;q++){ if(!fs[q].type||fs[q].type==='num'){fi=q;break;} } if(fi>=0){ S.tv[id][fs[fi].k]=rawNum(x); S.field=Math.min(fi+1,fs.length-1); } } }
 }
@@ -691,7 +707,7 @@ function rebase(u,raw,hex){
 var KEYS=[
  [ {k:'tool',t:'TOOL',c:'alt',s:'⏱計時'},{k:'shift',t:'SHIFT',c:'sh'},{k:'set',t:'⚙ 設定',c:'lt jp'},{k:'bs',t:'⌫ BS',c:'lt'},{k:'clr',t:'CLR',c:'cl',s:'AC'} ],
  [ {k:'pm',t:'(−)',c:'lt'},{k:'up',t:'▲',c:'lt'},{k:'down',t:'▼',c:'lt'},{k:'left',t:'◀',c:'lt'},{k:'right',t:'▶',c:'lt'} ],
- [ {k:'dBm',t:'dBm',c:'lt',s:'50/75Ω'},{k:'dBuV',t:'dBμV',c:'lt'},{k:'W',t:'W',c:'lt'},{k:'sn',t:'S/N',c:'lt'},{k:'vswr',t:'VSWR',c:'lt jp',s:'波長'} ],
+ [ {k:'dBm',t:'dBm',c:'lt',s:'50/75Ω'},{k:'dBuV',t:'dBμV',c:'lt'},{k:'W',t:'W',c:'lt'},{k:'sn',t:'S/N',c:'lt',s:'GPS'},{k:'vswr',t:'VSWR',c:'lt jp',s:'波長'} ],
  [ {k:'TX',t:'伝送値',c:'lt jp',s:'種別切替'},{k:'IND',t:'指示値',c:'lt jp'},{k:'PCT',t:'割合%',c:'lt jp'},{k:'MA',t:'電流mA',c:'lt jp'},{k:'V',t:'電圧V',c:'lt jp'} ],
  [ {k:'sq',t:'x²',c:'lt',s:'xʸ'},{k:'sqrt',t:'√',c:'lt',s:'∛'},{k:'log',t:'log',c:'lt',s:'ln'},{k:'pow10',t:'10ˣ',c:'lt',s:'eˣ'},{k:'inv',t:'x⁻¹',c:'lt',s:'π'} ],
  [ {k:'7',t:'7',c:'dk'},{k:'8',t:'8',c:'dk'},{k:'9',t:'9',c:'dk'},{k:'(',t:'(',c:'dk op'},{k:')',t:')',c:'dk op'} ],
@@ -717,6 +733,7 @@ function press(k){
   var sh=S.shift; if(k!=='shift') S.shift=false;
   buzz();
   if(S.mode==='sw'&&swKey(k,sh)){ render(); save(); return; }
+  if(S.mode==='gps'&&gpsKey(k,sh)){ render(); save(); return; }
   switch(k){
     case 'shift': S.shift=!sh; break;
     case 'tool': if(sh){ openSw(); break; } if(S.mode==='list'){ S.mode=S.prev||'calc'; } else { S.prev=S.mode; S.mode='list'; } break;
@@ -732,7 +749,7 @@ function press(k){
     case 'TX': if(sh){ cycleTx(1); break; } toConv('TX'); break;
     case 'dBuV': case 'W': case 'mW': case 'IND': case 'PCT': case 'MA': case 'V': toConv(k); break;
     case 'vswr': openTool(sh?'wave':'vswr',!sh); break;
-    case 'sn': openTool('sn',true); break;
+    case 'sn': if(sh){ openGps(); break; } openTool('sn',true); break;
     case 'sq': ins(sh?'^':'²'); if(sh) ins('('); break;
     case 'sqrt': ins(sh?'∛(':'√('); break;
     case 'log': ins(sh?'ln(':'log('); break;
@@ -758,6 +775,95 @@ function wakeOff(){ try{ if(wake){ wake.release(); wake=null; } }catch(e){} }
 function openSw(){ if(S.mode!=='sw'&&S.mode!=='list') S.prev=S.mode; S.mode='sw'; if(S.sw.run||S.tm.run) wakeOn(); }
 function swToggle(){ var w=S.sw; if(w.run){ w.acc+=Date.now()-w.start; w.run=false; S.ans=w.acc/1000; wakeOff(); } else { w.start=Date.now(); w.run=true; wakeOn(); } }
 function swLapReset(){ var w=S.sw; if(w.run){ var t=swEl(); w.laps.unshift(t); if(w.laps.length>99) w.laps.length=99; } else { w.acc=0; w.laps=[]; } }
+/* ---- GPS ---- */
+var G={watch:null,pos:null,err:'',last:null,hdgDev:null,lastT:0};
+function rad(d){return d*Math.PI/180;}
+function hav(a,b,c,d){ var R=6371008.8, p1=rad(a), p2=rad(c), dp=rad(c-a), dl=rad(d-b); var x=Math.sin(dp/2)*Math.sin(dp/2)+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)*Math.sin(dl/2); return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x)); }
+function brg(a,b,c,d){ var p1=rad(a),p2=rad(c),dl=rad(d-b); var y=Math.sin(dl)*Math.cos(p2), x=Math.cos(p1)*Math.sin(p2)-Math.sin(p1)*Math.cos(p2)*Math.cos(dl); return (Math.atan2(y,x)*180/Math.PI+360)%360; }
+var DIR16=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+var DIRJ={N:'北',NNE:'北北東',NE:'北東',ENE:'東北東',E:'東',ESE:'東南東',SE:'南東',SSE:'南南東',S:'南',SSW:'南南西',SW:'南西',WSW:'西南西',W:'西',WNW:'西北西',NW:'北西',NNW:'北北西'};
+function dir16(d){ return DIR16[Math.round(((d%360)+360)%360/22.5)%16]; }
+function dms(v,pos,neg){ var a=Math.abs(v), d=Math.floor(a), m=Math.floor((a-d)*60), sx=((a-d)*60-m)*60; return (v>=0?pos:neg)+' '+d+'°'+(m<10?'0':'')+m+"'"+(sx<10?'0':'')+sx.toFixed(1)+'"'; }
+function fmtDist(m){ return m>=1000?(m/1000).toFixed(m>=100000?1:3)+' km':m.toFixed(m<10?1:0)+' m'; }
+function onDevOri(e){
+  var h=null;
+  if(typeof e.webkitCompassHeading==='number') h=e.webkitCompassHeading;
+  else if(e.absolute&&typeof e.alpha==='number') h=(360-e.alpha)%360;
+  if(h===null) return;
+  var so=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);
+  G.hdgDev=(h+so+360)%360;
+  if(S.mode==='gps'){ var n=$('gpsNeedle'); if(n) n.setAttribute('transform','rotate('+G.hdgDev.toFixed(1)+' 60 60)'); var t=$('gpsHdg'); if(t) t.textContent=Math.round(G.hdgDev)+'° '+DIRJ[dir16(G.hdgDev)]; }
+}
+var oriOn=false;
+function oriStart(){
+  if(oriOn) return; oriOn=true;
+  try{
+    if(window.DeviceOrientationEvent&&typeof DeviceOrientationEvent.requestPermission==='function'){
+      DeviceOrientationEvent.requestPermission().then(function(r){ if(r==='granted') window.addEventListener('deviceorientation',onDevOri); }).catch(function(){});
+    } else if('ondeviceorientationabsolute' in window){ window.addEventListener('deviceorientationabsolute',onDevOri); }
+    else window.addEventListener('deviceorientation',onDevOri);
+  }catch(e){}
+}
+function gpsOn(){
+  if(!('geolocation' in navigator)){ G.err='この端末・ブラウザは位置情報に対応していません'; return; }
+  if(location.protocol!=='https:'&&location.hostname!=='localhost'&&location.protocol!=='file:'){ G.err='https のページで開いてください'; }
+  if(G.watch!==null) return;
+  G.err=''; S.gps.on=true; if(!S.gps.t0) S.gps.t0=Date.now(); oriStart(); wakeOn();
+  try{
+    G.watch=navigator.geolocation.watchPosition(function(p){
+      var c=p.coords, now=p.timestamp||Date.now(), sp=(typeof c.speed==='number'&&c.speed>=0)?c.speed:null;
+      if(G.last){ var d=hav(G.last.lat,G.last.lon,c.latitude,c.longitude), dt=(now-G.last.t)/1000;
+        if(d>Math.max(3,(c.accuracy||10)*0.5)){ S.gps.dist+=d; if(sp===null&&dt>=1) sp=d/dt; G.last={lat:c.latitude,lon:c.longitude,t:now}; }
+      } else G.last={lat:c.latitude,lon:c.longitude,t:now};
+      G.pos={lat:c.latitude,lon:c.longitude,acc:c.accuracy,alt:c.altitude,altAcc:c.altitudeAccuracy,hdg:(typeof c.heading==='number'&&!isNaN(c.heading)&&(sp||0)>0.5)?c.heading:null,sp:sp,t:now};
+      if(sp!==null&&sp*3.6>300) sp=null;
+      if(sp!==null&&sp*3.6>S.gps.max) S.gps.max=sp*3.6;
+      G.err=''; if(S.mode==='gps'){ render(); save(); }
+    },function(er){
+      G.err=er.code===1?'位置情報の使用が許可されていません。ブラウザ (またはスマホ) の設定で、このページの「位置情報」を許可してください。':er.code===3?'GPS の電波を待っています…':'位置を取得できません ('+(er.message||er.code)+')';
+      if(er.code===1) gpsOff();
+      if(S.mode==='gps') render();
+    },{enableHighAccuracy:true,maximumAge:0,timeout:20000});
+  }catch(e){ G.err='位置情報を開始できません'; }
+}
+function gpsOff(){ if(G.watch!==null){ try{ navigator.geolocation.clearWatch(G.watch); }catch(e){} G.watch=null; } S.gps.on=false; if(!(S.sw.run||S.tm.run)) wakeOff(); }
+function gpsReset(){ S.gps.dist=0; S.gps.max=0; S.gps.t0=G.watch!==null?Date.now():0; G.last=null; }
+function openGps(){ if(S.mode!=='gps'&&S.mode!=='list') S.prev=S.mode; S.mode='gps'; if(G.watch===null&&S.gps.autostart!==false) gpsOn(); }
+function gpsMark(){ if(G.pos){ S.gps.pt={lat:G.pos.lat,lon:G.pos.lon,t:Date.now()}; } }
+function gpsKey(k,sh){
+  if(k==='='){ if(G.watch!==null) gpsOff(); else gpsOn(); return true; }
+  if(k==='clr'&&!sh){ gpsOff(); S.mode='calc'; return true; }
+  if(k==='+'){ gpsMark(); return true; }
+  if(/^\d$/.test(k)||['.','−','×','÷','(',')','bs','pm','up','down','left','right','exp','ans','sq','sqrt','log','pow10','inv'].indexOf(k)>=0) return true;
+  return false;
+}
+function gaugeSvg(kmh){
+  var mx=S.gps.max, full=(mx<=18&&(kmh||0)<=18)?20:((mx<=55&&(kmh||0)<=55)?60:((mx<=110&&(kmh||0)<=110)?120:200));
+  var a0=-120,a1=120, cx=110, cy=104, r=88, h='';
+  var pt=function(a,rr){ var t=rad(a-90); return [cx+rr*Math.cos(t),cy+rr*Math.sin(t)]; };
+  var st=full/10;
+  for(var i=0;i<=10;i++){ var a=a0+(a1-a0)*i/10, p1=pt(a,r), p2=pt(a,r-(i%2?7:12)); h+='<line x1="'+p1[0].toFixed(1)+'" y1="'+p1[1].toFixed(1)+'" x2="'+p2[0].toFixed(1)+'" y2="'+p2[1].toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%2?1.5:2.5)+'"/>';
+    if(i%2===0){ var p3=pt(a,r-24); h+='<text x="'+p3[0].toFixed(1)+'" y="'+(p3[1]+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+Math.round(st*i)+'</text>'; } }
+  var s0=pt(a0,r), s1=pt(a1,r);
+  h='<path d="M'+s0[0].toFixed(1)+' '+s0[1].toFixed(1)+' A'+r+' '+r+' 0 1 1 '+s1[0].toFixed(1)+' '+s1[1].toFixed(1)+'" fill="none" stroke="currentColor" stroke-width="2.5"/>'+h;
+  var v=Math.max(0,Math.min(full,kmh||0)), an=a0+(a1-a0)*v/full, tip=pt(an,r-14);
+  if(kmh!==null) h+='<line x1="'+cx+'" y1="'+cy+'" x2="'+tip[0].toFixed(1)+'" y2="'+tip[1].toFixed(1)+'" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
+  h+='<circle cx="'+cx+'" cy="'+cy+'" r="7" fill="currentColor"/>';
+  h+='<text x="'+cx+'" y="'+(cy+38)+'" text-anchor="middle" font-size="26" font-weight="700" fill="currentColor" font-family="DejaVu Sans Mono,Consolas,monospace">'+(kmh===null?'--':kmh.toFixed(kmh<10?1:0))+'</text>';
+  h+='<text x="'+cx+'" y="'+(cy+54)+'" text-anchor="middle" font-size="11" fill="currentColor">km/h</text>';
+  return '<svg viewBox="0 0 220 170" class="gsvg" role="img" aria-label="速度メーター">'+h+'</svg>';
+}
+function compassSvg(hdg,tgt){
+  var h='<circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2"/>';
+  for(var i=0;i<36;i++){ var a=rad(i*10-90), r1=54, r2=i%9===0?44:(i%3===0?48:51); h+='<line x1="'+(60+r1*Math.cos(a)).toFixed(1)+'" y1="'+(60+r1*Math.sin(a)).toFixed(1)+'" x2="'+(60+r2*Math.cos(a)).toFixed(1)+'" y2="'+(60+r2*Math.sin(a)).toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%9===0?2:1)+'"/>'; }
+  [['N',0],['E',90],['S',180],['W',270]].forEach(function(q){ var a=rad(q[1]-90); h+='<text x="'+(60+35*Math.cos(a)).toFixed(1)+'" y="'+(64+35*Math.sin(a)).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+q[0]+'</text>'; });
+  if(tgt!==null) h+='<g transform="rotate('+tgt.toFixed(1)+' 60 60)"><path d="M60 3 L54 13 L66 13 Z" fill="currentColor"/></g>';
+  h+='<g id="gpsNeedle" transform="rotate('+(hdg===null?0:hdg).toFixed(1)+' 60 60)"'+(hdg===null?' opacity=".25"':'')+'><path d="M60 14 L67 60 L60 54 L53 60 Z" fill="currentColor"/><path d="M60 106 L67 60 L60 66 L53 60 Z" fill="none" stroke="currentColor" stroke-width="1.5"/></g><circle cx="60" cy="60" r="3" fill="var(--lcd)"/>';
+  return '<svg viewBox="0 0 120 120" class="csvg" role="img" aria-label="方位磁石">'+h+'</svg>';
+}
+function pad2(n){return (n<10?'0':'')+n;}
+function fmtHMS(ms){ var s2=Math.floor(ms/1000); return Math.floor(s2/3600)+':'+pad2(Math.floor(s2/60)%60)+':'+pad2(s2%60); }
+
 /* ---- タイマー ---- */
 function tmRem(){ var t=S.tm; return t.run?Math.max(0,t.end-Date.now()):t.remain; }
 function fmtTm(ms){ var sec=Math.ceil(ms/1000), h=Math.floor(sec/3600), m=Math.floor(sec/60)%60, s2=sec%60; var p2=function(n){return (n<10?'0':'')+n;}; return (h?h+':'+p2(m):p2(m))+':'+p2(s2); }
@@ -800,6 +906,7 @@ function swKey(k,sh){
 }
 setInterval(function(){
   if(S.mode==='sw'&&S.swm==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); }
+  if(S.mode==='gps'&&S.gps.on){ var ge=$('gpsEl'); if(ge) ge.textContent=fmtHMS(Date.now()-S.gps.t0); }
   var t=S.tm;
   if(t.run){
     if(Date.now()>=t.end){ t.run=false; t.remain=0; t.done=true; wakeOff(); if(S.mode!=='sw'){ S.prev=S.mode; } S.mode='sw'; S.swm='tm'; alarmStart(); render(); save(); }
@@ -813,7 +920,7 @@ function render(){
   var t=TXT[S.set.tx], sc=S.set.scale[S.set.tx];
   $('status').innerHTML='<button type="button" data-go="imp">'+S.set.imp+'Ω</button><button type="button" data-go="tx">'+esc(t.short)+'</button><button type="button" data-go="v">'+(S.set.vmode==='15'?'1-5V':S.set.r+'Ω')+'</button><button type="button" data-go="sc">目盛 '+fx(+sc[0],1)+'〜'+fx(+sc[1],1)+'</button>';
   document.querySelectorAll('.k.sh').forEach(function(b){ b.classList.toggle('on',S.shift); });
-  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>'+(S.sw.run&&!(S.mode==='sw'&&S.swm==='sw')?'<span class="ind on">⏱</span>':'')+(S.tm.run&&!(S.mode==='sw'&&S.swm==='tm')?'<span class="ind on">⏲ '+fmtTm(tmRem())+'</span>':'');
+  var L=$('lcd'), top='<div class="lcd-top"><span class="ind'+(S.shift?' on':'')+'">S</span>'+(S.sw.run&&!(S.mode==='sw'&&S.swm==='sw')?'<span class="ind on">⏱</span>':'')+(G.watch!==null&&S.mode!=='gps'?'<span class="ind on">GPS</span>':'')+(S.tm.run&&!(S.mode==='sw'&&S.swm==='tm')?'<span class="ind on">⏲ '+fmtTm(tmRem())+'</span>':'');
   var body='';
   if(S.mode==='calc'){
     top+='<span>COMP</span>'+(S.hi>=0?'<span>履歴 '+(S.hi+1)+'/'+S.hist.length+'</span>':'')+'<span class="grow"></span>';
@@ -836,8 +943,30 @@ function render(){
     L._rows=res?res.rows:null;
   } else if(S.mode==='list'){
     top+='<span>TOOL 一覧</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
-    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(id==='sw'?'ストップウォッチ':id==='tm'?'タイマー':TOOLS[id].name)+'</span><span class="v">'+(id==='sw'||id==='tm'?'計時':TOOLS[id].fields.length+' 項目')+'</span></div>'; }).join('')+'</div>';
+    body+='<div class="rows list">'+TLIST.map(function(id,i){ return '<div class="row'+(i===S.sel?' me':'')+'" data-tool="'+id+'"><span class="l">'+(i<10?((i+1)%10)+'. ':'　 ')+esc(id==='sw'?'ストップウォッチ':id==='tm'?'タイマー':id==='gps'?'GPS (速度・方位・高度)':TOOLS[id].name)+'</span><span class="v">'+(id==='sw'||id==='tm'?'計時':id==='gps'?'位置':TOOLS[id].fields.length+' 項目')+'</span></div>'; }).join('')+'</div>';
     body+='<div class="note">数字キー・タップ・▲▼＋= で選択</div>';
+  } else if(S.mode==='gps'){
+    var gp=G.pos, on=G.watch!==null, kmh=gp&&gp.sp!==null?gp.sp*3.6:null;
+    var hdg=G.hdgDev!==null?G.hdgDev:(gp&&gp.hdg!==null?gp.hdg:null);
+    var tb=(gp&&S.gps.pt)?brg(gp.lat,gp.lon,S.gps.pt.lat,S.gps.pt.lon):null, td=(gp&&S.gps.pt)?hav(gp.lat,gp.lon,S.gps.pt.lat,S.gps.pt.lon):null;
+    top+='<span>GPS</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
+    body+='<div class="gst"><span class="dot'+(on&&gp&&!G.err?' ok':'')+'"></span>'+esc(G.err?G.err:(on?(gp?('測位中'+(gp.alt!==null&&gp.alt!==undefined?' (3D)':' (2D)')+' ・ 精度 ±'+Math.round(gp.acc)+' m'):'GPS の電波を待っています…'):'停止中 ・ 「GPS 開始」を押してください'))+'</div>';
+    body+='<div class="gtop">'+gaugeSvg(kmh)+'<div class="gside">'+compassSvg(hdg,tb)+'<div class="gk">方位</div><div class="gv" id="gpsHdg">'+(hdg===null?'--':Math.round(hdg)+'° '+DIRJ[dir16(hdg)])+'</div></div></div>';
+    body+='<div class="ggrid">'
+      +'<div><span class="gk">高度</span><span class="gv big">'+(gp&&gp.alt!==null&&gp.alt!==undefined?Math.round(gp.alt)+' m':'--')+'</span></div>'
+      +'<div><span class="gk">最高速度</span><span class="gv big">'+(S.gps.max?S.gps.max.toFixed(1)+' km/h':'--')+'</span></div>'
+      +'<div><span class="gk">移動距離</span><span class="gv">'+fmtDist(S.gps.dist)+'</span></div>'
+      +'<div><span class="gk">経過時間</span><span class="gv" id="gpsEl">'+(S.gps.t0?fmtHMS(Date.now()-S.gps.t0):'0:00:00')+'</span></div>'
+      +'</div>';
+    body+='<div class="rows">'
+      +'<div class="row static"><span class="l">緯度</span><span class="v">'+(gp?gp.lat.toFixed(6)+'  '+dms(gp.lat,'N','S'):'--')+'</span></div>'
+      +'<div class="row static"><span class="l">経度</span><span class="v">'+(gp?gp.lon.toFixed(6)+'  '+dms(gp.lon,'E','W'):'--')+'</span></div>'
+      +(S.gps.pt?'<div class="row static strong"><span class="l">記録地点まで</span><span class="v">'+(td===null?'--':fmtDist(td)+'  '+Math.round(tb)+'° '+DIRJ[dir16(tb)])+'</span></div>':'')
+      +'</div>';
+    body+='<div class="swb"><button type="button" data-gps="go" class="'+(on?'stop':'go')+'">'+(on?'GPS 停止':'GPS 開始')+'</button><button type="button" data-gps="reset">距離リセット</button></div>';
+    body+='<div class="swb"><button type="button" data-gps="mark"'+(gp?'':' disabled')+'>ここを記録</button><button type="button" data-gps="copy"'+(gp?'':' disabled')+'>座標コピー</button></div>';
+    if(gp) body+='<a class="glink" href="https://www.google.com/maps?q='+gp.lat.toFixed(6)+','+gp.lon.toFixed(6)+'" target="_blank" rel="noopener">Googleマップで現在地を開く ↗</a>';
+    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位はスマホのコンパスを使い、使えない時は移動方向を表示します (▲が記録地点の方向)。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
   } else if(S.mode==='sw'&&S.swm==='tm'){
     var tt=S.tm, rm=tmRem();
     top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
@@ -902,7 +1031,7 @@ function renderBack(){
   h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
   h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
   h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
-  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>ストップウォッチ・タイマー</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。上のタブか ◀▶ で切替。タイマーは数字キーで時間をセット。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
+  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>GPS</b> : SHIFT＋S/N (または TOOL 一覧)。速度・方位・高度・緯度経度・移動距離。「ここを記録」で、その地点までの距離と方向を表示。<br><b>ストップウォッチ・タイマー</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。上のタブか ◀▶ で切替。タイマーは数字キーで時間をセット。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
   h+='<div class="sec"><h3>リセット</h3><div class="fr"><span>計算履歴 ('+S.hist.length+' 件)</span><button type="button" class="btn ghost" id="bHist">履歴を消去</button></div>';
   h+='<div class="fr"><span>すべての設定とツールの入力値</span><button type="button" class="btn danger" id="bReset">'+(resetArm?'もう一度押すと初期化':'初期値に戻す')+'</button></div></div>';
   h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
@@ -928,11 +1057,15 @@ function bind(){
     openBack(); scrollToSec(g==='imp'?'sec-imp':g==='v'?'sec-v':'sec-tx');
   });
   $('lcd').addEventListener('click',function(e){
+    var gb=e.target.closest('[data-gps]'); if(gb){ buzz(); var ga=gb.getAttribute('data-gps');
+      if(ga==='go'){ if(G.watch!==null) gpsOff(); else gpsOn(); } else if(ga==='reset') gpsReset(); else if(ga==='mark') gpsMark();
+      else if(ga==='copy'&&G.pos){ var txt=G.pos.lat.toFixed(6)+','+G.pos.lon.toFixed(6); try{ navigator.clipboard.writeText(txt).then(function(){ gb.textContent='コピーしました'; },function(){ gb.textContent=txt; }); }catch(er){ gb.textContent=txt; } save(); return; }
+      render(); save(); return; }
     var sm=e.target.closest('[data-swm]'); if(sm){ buzz(); S.swm=sm.getAttribute('data-swm'); render(); save(); return; }
     var tb=e.target.closest('[data-tm]'); if(tb){ buzz(); if(tb.getAttribute('data-tm')==='go') tmToggle(); else tmReset(); render(); save(); return; }
     var tp=e.target.closest('[data-tmp]'); if(tp){ buzz(); tmSet(+tp.getAttribute('data-tmp')*1000); render(); save(); return; }
     var sb=e.target.closest('[data-sw]'); if(sb){ buzz(); if(sb.getAttribute('data-sw')==='go') swToggle(); else swLapReset(); render(); save(); return; }
-    var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
+    var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='gps') gpsOff(); if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
     var t=e.target.closest('[data-tool]'); if(t){ openTool(t.getAttribute('data-tool')); render(); save(); return; }
     var f=e.target.closest('[data-f]'); if(f){ var i=+f.getAttribute('data-f');
       if(i===S.field){ var cf=curField(); if(cf.type==='opt') leftRight(1); } else { S.field=i; S.fresh=true; }
@@ -984,6 +1117,7 @@ buildKeys();
 bind();
 $('back').hidden=true;
 render();
+if(S.mode==='gps') gpsOn();
 })();
 </script>
 
