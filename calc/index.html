@@ -187,6 +187,12 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .ggrid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:4px 0 2px;padding:4px 4px;border-top:1px dashed rgba(29,42,27,.35);border-bottom:1px dashed rgba(29,42,27,.35)}
 .swb button:disabled{opacity:.4;cursor:default}
 .glink{display:block;text-align:center;margin:4px 0;font:700 13px/1.6 var(--f-ui);color:var(--lcd-ink)}
+.galm{display:flex;align-items:center;gap:6px;margin:4px 0;padding:4px 6px;border:1.5px solid rgba(29,42,27,.5);border-radius:8px}
+.galm .gk{flex:1}
+.galm.over{border-color:#c62828;background:rgba(198,40,40,.12)}
+.galm button{all:unset;cursor:pointer;min-width:34px;text-align:center;padding:6px 6px;border-radius:6px;font:700 16px/1 var(--f-ui);background:var(--lcd-inv);color:var(--lcd)}
+.galm button.tgl{font-size:12px;min-width:40px}
+.galm .gv{min-width:92px;text-align:center}
 .swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
 .swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
 .swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
@@ -227,7 +233,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 'use strict';
 /* ================= 定数 ================= */
 var LS_KEY='sogoKansanCalcV1';
-var DEF_SET={imp:50,tx:'dec',scale:{dec:[0,5],hex1:[0,10],hex2:[0,10]},ma:[4,20],vmode:'15',r:250,digits:'auto',vib:true,restore:true};
+var DEF_SET={imp:50,tx:'dec',scale:{dec:[0,5],hex1:[0,10],hex2:[0,10]},ma:[4,20],vmode:'15',r:250,digits:'auto',vib:true,restore:true,spdOn:true,spdLim:105};
 var TXT={
   dec:{name:'DEC 200-999',short:'DEC',min:200,div:800,hex:false},
   hex1:{name:'HEX 990-FD0',short:'HEX1',min:0x990,div:0xFD0-0x990,hex:true},
@@ -808,7 +814,7 @@ function gpsOn(){
   if(!('geolocation' in navigator)){ G.err='この端末・ブラウザは位置情報に対応していません'; return; }
   if(location.protocol!=='https:'&&location.hostname!=='localhost'&&location.protocol!=='file:'){ G.err='https のページで開いてください'; }
   if(G.watch!==null) return;
-  G.err=''; S.gps.on=true; if(!S.gps.t0) S.gps.t0=Date.now(); oriStart(); wakeOn();
+  G.err=''; S.gps.on=true; if(!S.gps.t0) S.gps.t0=Date.now(); oriStart(); wakeOn(); audioPrep();
   try{
     G.watch=navigator.geolocation.watchPosition(function(p){
       var c=p.coords, now=p.timestamp||Date.now(), sp=(typeof c.speed==='number'&&c.speed>=0)?c.speed:null;
@@ -818,7 +824,7 @@ function gpsOn(){
       G.pos={lat:c.latitude,lon:c.longitude,acc:c.accuracy,alt:c.altitude,altAcc:c.altitudeAccuracy,hdg:(typeof c.heading==='number'&&!isNaN(c.heading)&&(sp||0)>0.5)?c.heading:null,sp:sp,t:now};
       if(sp!==null&&sp*3.6>300) sp=null;
       if(sp!==null&&sp*3.6>S.gps.max) S.gps.max=sp*3.6;
-      G.err=''; if(S.mode==='gps'){ render(); save(); }
+      G.err=''; spdCheck(sp===null?null:sp*3.6); if(S.mode==='gps'){ render(); save(); }
     },function(er){
       G.err=er.code===1?'位置情報の使用が許可されていません。ブラウザ (またはスマホ) の設定で、このページの「位置情報」を許可してください。':er.code===3?'GPS の電波を待っています…':'位置を取得できません ('+(er.message||er.code)+')';
       if(er.code===1) gpsOff();
@@ -826,30 +832,49 @@ function gpsOn(){
     },{enableHighAccuracy:true,maximumAge:0,timeout:20000});
   }catch(e){ G.err='位置情報を開始できません'; }
 }
-function gpsOff(){ if(G.watch!==null){ try{ navigator.geolocation.clearWatch(G.watch); }catch(e){} G.watch=null; } S.gps.on=false; if(!(S.sw.run||S.tm.run)) wakeOff(); }
+function gpsOff(){ spdOver=false; chimeStop(); if(G.watch!==null){ try{ navigator.geolocation.clearWatch(G.watch); }catch(e){} G.watch=null; } S.gps.on=false; if(!(S.sw.run||S.tm.run)) wakeOff(); }
 function gpsReset(){ S.gps.dist=0; S.gps.max=0; S.gps.t0=G.watch!==null?Date.now():0; G.last=null; }
 function openGps(){ if(S.mode!=='gps'&&S.mode!=='list') S.prev=S.mode; S.mode='gps'; if(G.watch===null&&S.gps.autostart!==false) gpsOn(); }
 function gpsMark(){ if(G.pos){ S.gps.pt={lat:G.pos.lat,lon:G.pos.lon,t:Date.now()}; } }
 function gpsKey(k,sh){
+  audioPrep();
   if(k==='='){ if(G.watch!==null) gpsOff(); else gpsOn(); return true; }
+  if(k==='left'||k==='right'){ spdAdj(k==='left'?-5:5); return true; }
+  if(k==='down'||k==='up'){ if(k==='up') S.set.spdOn=true; else { S.set.spdOn=false; spdOver=false; chimeStop(); } return true; }
   if(k==='clr'&&!sh){ gpsOff(); S.mode='calc'; return true; }
   if(k==='+'){ gpsMark(); return true; }
   if(/^\d$/.test(k)||['.','−','×','÷','(',')','bs','pm','up','down','left','right','exp','ans','sq','sqrt','log','pow10','inv'].indexOf(k)>=0) return true;
   return false;
 }
+var spdOver=false, chimeT=null;
+function chimeTone(t0,f){ try{ var o=actx.createOscillator(), o2=actx.createOscillator(), g=actx.createGain(); o.type='sine'; o2.type='sine'; o.frequency.value=f; o2.frequency.value=f*2.76; var g2=actx.createGain(); g2.gain.value=0.15;
+  g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.5,t0+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.85);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(actx.destination); o.start(t0); o2.start(t0); o.stop(t0+0.9); o2.stop(t0+0.9); }catch(e){} }
+function kinkon(){ if(!actx) return; try{ if(actx.state==='suspended') actx.resume(); }catch(e){} var t=actx.currentTime+0.02; chimeTone(t,1318.5); chimeTone(t+0.42,1046.5); }
+function chimeStart(){ if(chimeT) return; audioPrep(); kinkon(); chimeT=setInterval(kinkon,1000); try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){} }
+function chimeStop(){ if(chimeT){ clearInterval(chimeT); chimeT=null; } }
+function spdCheck(kmh){
+  var lim=S.set.spdLim;
+  if(!S.set.spdOn||kmh===null||G.watch===null){ spdOver=false; chimeStop(); return; }
+  if(kmh>lim){ spdOver=true; chimeStart(); } else if(kmh<lim-2){ spdOver=false; chimeStop(); }
+}
+function spdAdj(d){ S.set.spdLim=Math.max(30,Math.min(120,S.set.spdLim+d)); }
 function gaugeSvg(kmh){
-  var mx=S.gps.max, full=(mx<=18&&(kmh||0)<=18)?20:((mx<=55&&(kmh||0)<=55)?60:((mx<=110&&(kmh||0)<=110)?120:200));
+  var mx=S.gps.max, full=(mx<=115&&(kmh||0)<=115&&S.set.spdLim<=115)?120:200;
   var a0=-120,a1=120, cx=110, cy=104, r=88, h='';
   var pt=function(a,rr){ var t=rad(a-90); return [cx+rr*Math.cos(t),cy+rr*Math.sin(t)]; };
-  var st=full/10;
-  for(var i=0;i<=10;i++){ var a=a0+(a1-a0)*i/10, p1=pt(a,r), p2=pt(a,r-(i%2?7:12)); h+='<line x1="'+p1[0].toFixed(1)+'" y1="'+p1[1].toFixed(1)+'" x2="'+p2[0].toFixed(1)+'" y2="'+p2[1].toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%2?1.5:2.5)+'"/>';
+  var nd=full===120?12:10, st=full/nd;
+  for(var i=0;i<=nd;i++){ var a=a0+(a1-a0)*i/nd, p1=pt(a,r), p2=pt(a,r-(i%2?7:12)); h+='<line x1="'+p1[0].toFixed(1)+'" y1="'+p1[1].toFixed(1)+'" x2="'+p2[0].toFixed(1)+'" y2="'+p2[1].toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%2?1.5:2.5)+'"/>';
     if(i%2===0){ var p3=pt(a,r-24); h+='<text x="'+p3[0].toFixed(1)+'" y="'+(p3[1]+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+Math.round(st*i)+'</text>'; } }
   var s0=pt(a0,r), s1=pt(a1,r);
   h='<path d="M'+s0[0].toFixed(1)+' '+s0[1].toFixed(1)+' A'+r+' '+r+' 0 1 1 '+s1[0].toFixed(1)+' '+s1[1].toFixed(1)+'" fill="none" stroke="currentColor" stroke-width="2.5"/>'+h;
+  if(S.set.spdOn){ var la=a0+(a1-a0)*Math.min(full,S.set.spdLim)/full, l1=pt(la,r+5), l2=pt(la,r-20), le=pt(a1,r+1), lb=pt(la,r+1);
+    h+='<path d="M'+lb[0].toFixed(1)+' '+lb[1].toFixed(1)+' A'+(r+1)+' '+(r+1)+' 0 0 1 '+le[0].toFixed(1)+' '+le[1].toFixed(1)+'" fill="none" stroke="#d32f2f" stroke-width="4" opacity=".55"/>';
+    h+='<line x1="'+l1[0].toFixed(1)+'" y1="'+l1[1].toFixed(1)+'" x2="'+l2[0].toFixed(1)+'" y2="'+l2[1].toFixed(1)+'" stroke="#d32f2f" stroke-width="4" stroke-linecap="round"/>'; }
   var v=Math.max(0,Math.min(full,kmh||0)), an=a0+(a1-a0)*v/full, tip=pt(an,r-14);
   if(kmh!==null) h+='<line x1="'+cx+'" y1="'+cy+'" x2="'+tip[0].toFixed(1)+'" y2="'+tip[1].toFixed(1)+'" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>';
   h+='<circle cx="'+cx+'" cy="'+cy+'" r="7" fill="currentColor"/>';
-  h+='<text x="'+cx+'" y="'+(cy+38)+'" text-anchor="middle" font-size="26" font-weight="700" fill="currentColor" font-family="DejaVu Sans Mono,Consolas,monospace">'+(kmh===null?'--':kmh.toFixed(kmh<10?1:0))+'</text>';
+  h+='<text x="'+cx+'" y="'+(cy+38)+'" text-anchor="middle" font-size="26" font-weight="700" fill="'+(spdOver?'#c62828':'currentColor')+'"'+(spdOver?' class="blink"':'')+' font-family="DejaVu Sans Mono,Consolas,monospace">'+(kmh===null?'--':kmh.toFixed(kmh<10?1:0))+'</text>';
   h+='<text x="'+cx+'" y="'+(cy+54)+'" text-anchor="middle" font-size="11" fill="currentColor">km/h</text>';
   return '<svg viewBox="0 0 220 170" class="gsvg" role="img" aria-label="速度メーター">'+h+'</svg>';
 }
@@ -958,6 +983,8 @@ function render(){
       +'<div><span class="gk">移動距離</span><span class="gv">'+fmtDist(S.gps.dist)+'</span></div>'
       +'<div><span class="gk">経過時間</span><span class="gv" id="gpsEl">'+(S.gps.t0?fmtHMS(Date.now()-S.gps.t0):'0:00:00')+'</span></div>'
       +'</div>';
+    body+='<div class="galm'+(spdOver?' over':'')+'"><span class="gk">速度アラーム</span><button type="button" data-spd="-5" aria-label="5キロ下げる">−</button><span class="gv big">'+(S.set.spdOn?S.set.spdLim+' km/h':'オフ')+'</span><button type="button" data-spd="5" aria-label="5キロ上げる">＋</button><button type="button" data-spd="tg" class="tgl">'+(S.set.spdOn?'ON':'OFF')+'</button></div>';
+    if(spdOver) body+='<div class="warn" style="text-align:center;font-size:15px">速度超過！ '+S.set.spdLim+' km/h を超えています</div>';
     body+='<div class="rows">'
       +'<div class="row static"><span class="l">緯度</span><span class="v">'+(gp?gp.lat.toFixed(6)+'  '+dms(gp.lat,'N','S'):'--')+'</span></div>'
       +'<div class="row static"><span class="l">経度</span><span class="v">'+(gp?gp.lon.toFixed(6)+'  '+dms(gp.lon,'E','W'):'--')+'</span></div>'
@@ -966,7 +993,7 @@ function render(){
     body+='<div class="swb"><button type="button" data-gps="go" class="'+(on?'stop':'go')+'">'+(on?'GPS 停止':'GPS 開始')+'</button><button type="button" data-gps="reset">距離リセット</button></div>';
     body+='<div class="swb"><button type="button" data-gps="mark"'+(gp?'':' disabled')+'>ここを記録</button><button type="button" data-gps="copy"'+(gp?'':' disabled')+'>座標コピー</button></div>';
     if(gp) body+='<a class="glink" href="https://www.google.com/maps?q='+gp.lat.toFixed(6)+','+gp.lon.toFixed(6)+'" target="_blank" rel="noopener">Googleマップで現在地を開く ↗</a>';
-    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位はスマホのコンパスを使い、使えない時は移動方向を表示します (▲が記録地点の方向)。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
+    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位はスマホのコンパスを使い、使えない時は移動方向を表示します (▲が記録地点の方向)。<br>速度アラーム: 設定速度を超えるとキンコン音。◀▶ (または −/＋) で 30〜120 km/h を 5 km/h ごとに設定、▲でオン ▼でオフ。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
   } else if(S.mode==='sw'&&S.swm==='tm'){
     var tt=S.tm, rm=tmRem();
     top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
@@ -1028,6 +1055,7 @@ function renderBack(){
   h+='<div class="fr" id="sec-v"><span>電圧換算</span>'+seg('sVm',[['15','1-5V (250Ω固定)'],['r','受電抵抗を指定']],s.vmode)+'</div>';
   h+='<div class="fr"><label for="rOhm">受電抵抗 (Ω)</label><input class="num" type="number" step="any" inputmode="decimal" id="rOhm" value="'+esc(s.r)+'"'+(s.vmode==='15'?' disabled':'')+'></div>';
   h+='<div class="help">換算は 割合 = (入力 − 最小) ÷ 幅 を共通に使い、伝送値・指示値・電流・電圧へ展開します。HEX 種別では伝送値を16進数で入力 (SHIFT＋1〜6 で A〜F)。</div></div>';
+  h+='<div class="sec"><h3>GPS 速度アラーム</h3><div class="fr"><span>速度超過でキンコン音を鳴らす</span>'+tg('tSpd',s.spdOn,'速度アラーム')+'</div><div class="fr"><label for="spdLim">アラーム速度 (30〜120 km/h)</label><input class="num" type="number" min="30" max="120" step="5" inputmode="numeric" id="spdLim" value="'+esc(s.spdLim)+'"></div><div class="help">初期値 105 km/h。速度メーターの赤い線がアラーム速度です。GPS 画面の ◀▶ でも変えられます。</div></div>';
   h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
   h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
   h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
@@ -1057,6 +1085,7 @@ function bind(){
     openBack(); scrollToSec(g==='imp'?'sec-imp':g==='v'?'sec-v':'sec-tx');
   });
   $('lcd').addEventListener('click',function(e){
+    var sp2=e.target.closest('[data-spd]'); if(sp2){ buzz(); audioPrep(); var sv=sp2.getAttribute('data-spd'); if(sv==='tg'){ S.set.spdOn=!S.set.spdOn; if(!S.set.spdOn){ spdOver=false; chimeStop(); } else { kinkon(); } } else { spdAdj(+sv); if(S.set.spdOn) kinkon(); } render(); save(); return; }
     var gb=e.target.closest('[data-gps]'); if(gb){ buzz(); var ga=gb.getAttribute('data-gps');
       if(ga==='go'){ if(G.watch!==null) gpsOff(); else gpsOn(); } else if(ga==='reset') gpsReset(); else if(ga==='mark') gpsMark();
       else if(ga==='copy'&&G.pos){ var txt=G.pos.lat.toFixed(6)+','+G.pos.lon.toFixed(6); try{ navigator.clipboard.writeText(txt).then(function(){ gb.textContent='コピーしました'; },function(){ gb.textContent=txt; }); }catch(er){ gb.textContent=txt; } save(); return; }
@@ -1079,6 +1108,7 @@ function bind(){
       if(g==='sImp') S.set.imp=+v; else if(g==='sTx') S.set.tx=v; else if(g==='sVm') S.set.vmode=v; else if(g==='sDg') S.set.digits=v;
       renderBack(); save(); return; }
     if(e.target.id==='tVib'){ S.set.vib=!S.set.vib; renderBack(); save(); return; }
+    if(e.target.id==='tSpd'){ S.set.spdOn=!S.set.spdOn; if(!S.set.spdOn){ spdOver=false; chimeStop(); } renderBack(); save(); return; }
     if(e.target.id==='tRes'){ S.set.restore=!S.set.restore; renderBack(); save(); return; }
     if(e.target.id==='bHist'){ S.hist=[]; S.hi=-1; renderBack(); save(); return; }
     if(e.target.id==='bReset'){
@@ -1090,7 +1120,7 @@ function bind(){
     var el=e.target, id=el.id, val=el.value; if(val==='') return;
     var m=id.match(/^sc_(\w+)_(\d)$/);
     if(m){ S.set.scale[m[1]][+m[2]]=+val; }
-    else if(id==='ma0') S.set.ma[0]=+val; else if(id==='ma1') S.set.ma[1]=+val; else if(id==='rOhm') S.set.r=+val;
+    else if(id==='spdLim'){ var lv=Math.round(+val); if(lv>=30&&lv<=120) S.set.spdLim=lv; } else if(id==='ma0') S.set.ma[0]=+val; else if(id==='ma1') S.set.ma[1]=+val; else if(id==='rOhm') S.set.r=+val;
     save();
   });
   document.addEventListener('keydown',function(e){
