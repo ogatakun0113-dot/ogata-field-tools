@@ -924,7 +924,8 @@ function gaugeSvg(kmh){
 function compassSvg(hdg,tgt){
   var h='<circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2"/>';
   for(var i=0;i<36;i++){ var a=rad(i*10-90), r1=54, r2=i%9===0?44:(i%3===0?48:51); h+='<line x1="'+(60+r1*Math.cos(a)).toFixed(1)+'" y1="'+(60+r1*Math.sin(a)).toFixed(1)+'" x2="'+(60+r2*Math.cos(a)).toFixed(1)+'" y2="'+(60+r2*Math.sin(a)).toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%9===0?2:1)+'"/>'; }
-  [['N',0],['E',90],['S',180],['W',270]].forEach(function(q){ var a=rad(q[1]-90); h+='<text x="'+(60+35*Math.cos(a)).toFixed(1)+'" y="'+(64+35*Math.sin(a)).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">'+q[0]+'</text>'; });
+  [['N',0],['E',90],['S',180],['W',270]].forEach(function(q){ var a=rad(q[1]-90); h+='<text x="'+(60+35*Math.cos(a)).toFixed(1)+'" y="'+(64+35*Math.sin(a)).toFixed(1)+'" text-anchor="middle" font-size="'+(q[0]==='N'?14:12)+'" font-weight="'+(q[0]==='N'?800:700)+'" fill="'+(q[0]==='N'?'#d32f2f':'currentColor')+'">'+q[0]+'</text>'; });
+  h+='<line x1="60" y1="6" x2="60" y2="16" stroke="#d32f2f" stroke-width="3"/>';
   if(tgt!==null) h+='<g transform="rotate('+tgt.toFixed(1)+' 60 60)"><path d="M60 3 L54 13 L66 13 Z" fill="currentColor"/></g>';
   h+='<g id="gpsNeedle" transform="rotate('+(hdg===null?0:hdg).toFixed(1)+' 60 60)"'+(hdg===null?' opacity=".25"':'')+'><path d="M60 14 L67 60 L60 54 L53 60 Z" fill="currentColor"/><path d="M60 106 L67 60 L60 66 L53 60 Z" fill="none" stroke="currentColor" stroke-width="1.5"/></g><circle cx="60" cy="60" r="3" fill="var(--lcd)"/>';
   return '<svg viewBox="0 0 120 120" class="csvg" role="img" aria-label="方位磁石">'+h+'</svg>';
