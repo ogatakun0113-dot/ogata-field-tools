@@ -841,7 +841,7 @@ function onDevOri(e){
   if(h===null) return;
   var so=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);
   G.hdgDev=(h+so+360)%360;
-  if(S.mode==='gps'){ var n=$('gpsNeedle'); if(n) n.setAttribute('transform','rotate('+G.hdgDev.toFixed(1)+' 60 60)'); var t=$('gpsHdg'); if(t) t.textContent=Math.round(G.hdgDev)+'° '+DIRJ[dir16(G.hdgDev)]; }
+  if(S.mode==='gps'){ var n=$('gpsDial'); if(n) n.setAttribute('transform','rotate('+(-G.hdgDev).toFixed(1)+' 60 60)'); var t=$('gpsHdg'); if(t) t.textContent=Math.round(G.hdgDev)+'° '+DIRJ[dir16(G.hdgDev)]; }
 }
 var oriOn=false;
 function oriStart(){
@@ -922,12 +922,15 @@ function gaugeSvg(kmh){
   return '<svg viewBox="0 0 220 170" class="gsvg" role="img" aria-label="速度メーター">'+h+'</svg>';
 }
 function compassSvg(hdg,tgt){
-  var h='<circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2"/>';
-  for(var i=0;i<36;i++){ var a=rad(i*10-90), r1=54, r2=i%9===0?44:(i%3===0?48:51); h+='<line x1="'+(60+r1*Math.cos(a)).toFixed(1)+'" y1="'+(60+r1*Math.sin(a)).toFixed(1)+'" x2="'+(60+r2*Math.cos(a)).toFixed(1)+'" y2="'+(60+r2*Math.sin(a)).toFixed(1)+'" stroke="currentColor" stroke-width="'+(i%9===0?2:1)+'"/>'; }
-  [['N',0],['E',90],['S',180],['W',270]].forEach(function(q){ var a=rad(q[1]-90); h+='<text x="'+(60+35*Math.cos(a)).toFixed(1)+'" y="'+(64+35*Math.sin(a)).toFixed(1)+'" text-anchor="middle" font-size="'+(q[0]==='N'?14:12)+'" font-weight="'+(q[0]==='N'?800:700)+'" fill="'+(q[0]==='N'?'#d32f2f':'currentColor')+'">'+q[0]+'</text>'; });
-  h+='<line x1="60" y1="6" x2="60" y2="16" stroke="#d32f2f" stroke-width="3"/>';
-  if(tgt!==null) h+='<g transform="rotate('+tgt.toFixed(1)+' 60 60)"><path d="M60 3 L54 13 L66 13 Z" fill="currentColor"/></g>';
-  h+='<g id="gpsNeedle" transform="rotate('+(hdg===null?0:hdg).toFixed(1)+' 60 60)"'+(hdg===null?' opacity=".25"':'')+'><path d="M60 14 L67 60 L60 54 L53 60 Z" fill="currentColor"/><path d="M60 106 L67 60 L60 66 L53 60 Z" fill="none" stroke="currentColor" stroke-width="1.5"/></g><circle cx="60" cy="60" r="3" fill="var(--lcd)"/>';
+  var rot=hdg===null?0:-hdg, h='';
+  h+='<path d="M60 0 L55 7 L65 7 Z" fill="currentColor"/>';
+  h+='<g id="gpsDial" transform="rotate('+rot.toFixed(1)+' 60 60)">';
+  h+='<circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="2"/>';
+  for(var i=0;i<36;i++){ var a=rad(i*10-90), r1=52, r2=i%9===0?42:(i%3===0?46:49); h+='<line x1="'+(60+r1*Math.cos(a)).toFixed(1)+'" y1="'+(60+r1*Math.sin(a)).toFixed(1)+'" x2="'+(60+r2*Math.cos(a)).toFixed(1)+'" y2="'+(60+r2*Math.sin(a)).toFixed(1)+'" stroke="'+(i===0?'#d32f2f':'currentColor')+'" stroke-width="'+(i%9===0?2.5:1)+'"/>'; }
+  [['N',0],['E',90],['S',180],['W',270]].forEach(function(q){ var a=rad(q[1]-90); h+='<text x="'+(60+33*Math.cos(a)).toFixed(1)+'" y="'+(64+33*Math.sin(a)).toFixed(1)+'" text-anchor="middle" font-size="'+(q[0]==='N'?13:11)+'" font-weight="800" fill="'+(q[0]==='N'?'#d32f2f':'currentColor')+'" transform="rotate('+(q[1])+' '+(60+33*Math.cos(a)).toFixed(1)+' '+(60+33*Math.sin(a)).toFixed(1)+')">'+q[0]+'</text>'; });
+  if(tgt!==null) h+='<g transform="rotate('+tgt.toFixed(1)+' 60 60)"><path d="M60 9 L55 18 L65 18 Z" fill="currentColor"/></g>';
+  h+='<g'+(hdg===null?' opacity=".3"':'')+'><path d="M60 31 L66 60 L54 60 Z" fill="#d32f2f"/><path d="M60 89 L66 60 L54 60 Z" fill="var(--lcd)" stroke="currentColor" stroke-width="1.5"/></g>';
+  h+='</g><circle cx="60" cy="60" r="3.5" fill="currentColor"/>';
   return '<svg viewBox="0 0 120 120" class="csvg" role="img" aria-label="方位磁石">'+h+'</svg>';
 }
 function pad2(n){return (n<10?'0':'')+n;}
@@ -1037,7 +1040,7 @@ function render(){
     body+='<div class="swb"><button type="button" data-gps="go" class="'+(on?'stop':'go')+'">'+(on?'GPS 停止':'GPS 開始')+'</button><button type="button" data-gps="reset">距離リセット</button></div>';
     body+='<div class="swb"><button type="button" data-gps="mark"'+(gp?'':' disabled')+'>ここを記録</button><button type="button" data-gps="copy"'+(gp?'':' disabled')+'>座標コピー</button></div>';
     if(gp) body+='<a class="glink" href="https://www.google.com/maps?q='+gp.lat.toFixed(6)+','+gp.lon.toFixed(6)+'" target="_blank" rel="noopener">Googleマップで現在地を開く ↗</a>';
-    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位はスマホのコンパスを使い、使えない時は移動方向を表示します (▲が記録地点の方向)。<br>速度アラーム: 設定速度を超えるとキンコン音。◀▶ (または −/＋) で 30〜120 km/h を 5 km/h ごとに設定、▲でオン ▼でオフ。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
+    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位磁石の赤い針が北、上の▼がスマホの向き (使えない時は移動方向)。盤の小さい▲が記録地点の方向。<br>速度アラーム: 設定速度を超えるとキンコン音。◀▶ (または −/＋) で 30〜120 km/h を 5 km/h ごとに設定、▲でオン ▼でオフ。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
   } else if(S.mode==='sw'&&S.swm==='tm'){
     var tt=S.tm, rm=tmRem();
     top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
