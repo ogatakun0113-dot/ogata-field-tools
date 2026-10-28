@@ -860,15 +860,17 @@ function gpsOn(){
   G.err=''; S.gps.on=true; if(!S.gps.t0) S.gps.t0=Date.now(); oriStart(); wakeOn(); audioPrep();
   try{
     G.watch=navigator.geolocation.watchPosition(function(p){
-      var c=p.coords, now=p.timestamp||Date.now(), sp=(typeof c.speed==='number'&&c.speed>=0)?c.speed:null;
+      var c=p.coords, now=p.timestamp||Date.now(), sp=(typeof c.speed==='number'&&c.speed>=0)?c.speed:null, spGps=sp!==null;
+      G.rx=Date.now();
       if(G.last){ var d=hav(G.last.lat,G.last.lon,c.latitude,c.longitude), dt=(now-G.last.t)/1000;
         if(d>Math.max(3,(c.accuracy||10)*0.5)){ S.gps.dist+=d; if(sp===null&&dt>=1) sp=d/dt; G.last={lat:c.latitude,lon:c.longitude,t:now}; }
       } else G.last={lat:c.latitude,lon:c.longitude,t:now};
       G.pos={lat:c.latitude,lon:c.longitude,acc:c.accuracy,alt:c.altitude,altAcc:c.altitudeAccuracy,hdg:(typeof c.heading==='number'&&!isNaN(c.heading)&&(sp||0)>0.5)?c.heading:null,sp:sp,t:now};
       if(sp!==null&&sp*3.6>300) sp=null;
       if(sp!==null&&sp*3.6>S.gps.max) S.gps.max=sp*3.6;
-      G.err=''; spdCheck(sp===null?null:sp*3.6); if(S.mode==='gps'){ render(); save(); }
+      G.err=''; spdCheck(sp===null?null:sp*3.6,c.accuracy,spGps); if(S.mode==='gps'){ render(); save(); }
     },function(er){
+      overCnt=0; spdOver=false; chimeStop();
       G.err=er.code===1?'位置情報の使用が許可されていません。ブラウザ (またはスマホ) の設定で、このページの「位置情報」を許可してください。':er.code===3?'GPS の電波を待っています…':'位置を取得できません ('+(er.message||er.code)+')';
       if(er.code===1) gpsOff();
       if(S.mode==='gps') render();
@@ -896,11 +898,14 @@ function chimeTone(t0,f){ try{ var o=actx.createOscillator(), o2=actx.createOsci
 function kinkon(){ if(!actx) return; try{ if(actx.state==='suspended') actx.resume(); }catch(e){} var t=actx.currentTime+0.02; chimeTone(t,1318.5); chimeTone(t+0.42,1046.5); }
 function chimeStart(){ if(chimeT) return; audioPrep(); kinkon(); chimeT=setInterval(kinkon,1000); try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){} }
 function chimeStop(){ if(chimeT){ clearInterval(chimeT); chimeT=null; } }
-function spdCheck(kmh){
+var overCnt=0;
+function spdCheck(kmh,acc,fromGps){
   var lim=S.set.spdLim;
-  if(!S.set.spdOn||kmh===null||G.watch===null){ spdOver=false; chimeStop(); return; }
-  if(kmh>lim){ spdOver=true; chimeStart(); } else if(kmh<lim-2){ spdOver=false; chimeStop(); }
+  if(!S.set.spdOn||kmh===null||G.watch===null||!fromGps||!(acc<=50)){ overCnt=0; spdOver=false; chimeStop(); return; }
+  if(kmh>lim){ overCnt++; if(overCnt>=2){ spdOver=true; chimeStart(); } }
+  else { overCnt=0; if(kmh<lim-2){ spdOver=false; chimeStop(); } }
 }
+function gpsLost(){ return G.watch!==null&&(!G.rx||Date.now()-G.rx>4000); }
 function spdAdj(d){ S.set.spdLim=Math.max(30,Math.min(120,S.set.spdLim+d)); }
 function gaugeSvg(kmh){
   var mx=S.gps.max, full=(mx<=115&&(kmh||0)<=115&&S.set.spdLim<=115)?120:200;
@@ -978,6 +983,8 @@ function swKey(k,sh){
 }
 setInterval(function(){
   if(S.mode==='sw'&&S.swm==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); }
+  if(gpsLost()&&(chimeT||spdOver||!G.lostShown)){ overCnt=0; spdOver=false; chimeStop(); if(!G.lostShown){ G.lostShown=true; if(S.mode==='gps') render(); } }
+  if(!gpsLost()) G.lostShown=false;
   if(S.mode==='gps'&&S.gps.on){ var ge=$('gpsEl'); if(ge) ge.textContent=fmtHMS(Date.now()-S.gps.t0); }
   var t=S.tm;
   if(t.run){
@@ -1022,7 +1029,7 @@ function render(){
     var hdg=G.hdgDev!==null?G.hdgDev:(gp&&gp.hdg!==null?gp.hdg:null);
     var tb=(gp&&S.gps.pt)?brg(gp.lat,gp.lon,S.gps.pt.lat,S.gps.pt.lon):null, td=(gp&&S.gps.pt)?hav(gp.lat,gp.lon,S.gps.pt.lat,S.gps.pt.lon):null;
     top+='<span>GPS</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
-    body+='<div class="gst"><span class="dot'+(on&&gp&&!G.err?' ok':'')+'"></span>'+esc(G.err?G.err:(on?(gp?('測位中'+(gp.alt!==null&&gp.alt!==undefined?' (3D)':' (2D)')+' ・ 精度 ±'+Math.round(gp.acc)+' m'):'GPS の電波を待っています…'):'停止中 ・ 「GPS 開始」を押してください'))+'</div>';
+    body+='<div class="gst"><span class="dot'+(on&&gp&&!G.err&&!gpsLost()?' ok':'')+'"></span>'+esc(G.err?G.err:(on?(gpsLost()&&gp?'GPS 信号なし (トンネル等) ・ アラーム停止中':gp?('測位中'+(gp.alt!==null&&gp.alt!==undefined?' (3D)':' (2D)')+' ・ 精度 ±'+Math.round(gp.acc)+' m'):'GPS の電波を待っています…'):'停止中 ・ 「GPS 開始」を押してください'))+'</div>';
     body+='<div class="gtop">'+gaugeSvg(kmh)+'<div class="gside">'+compassSvg(hdg,tb)+'<div class="gk">方位</div><div class="gv" id="gpsHdg">'+(hdg===null?'--':Math.round(hdg)+'° '+DIRJ[dir16(hdg)])+'</div></div></div>';
     body+='<div class="ggrid">'
       +'<div><span class="gk">高度</span><span class="gv big">'+(gp&&gp.alt!==null&&gp.alt!==undefined?Math.round(gp.alt)+' m':'--')+'</span></div>'
@@ -1040,7 +1047,7 @@ function render(){
     body+='<div class="swb"><button type="button" data-gps="go" class="'+(on?'stop':'go')+'">'+(on?'GPS 停止':'GPS 開始')+'</button><button type="button" data-gps="reset">距離リセット</button></div>';
     body+='<div class="swb"><button type="button" data-gps="mark"'+(gp?'':' disabled')+'>ここを記録</button><button type="button" data-gps="copy"'+(gp?'':' disabled')+'>座標コピー</button></div>';
     if(gp) body+='<a class="glink" href="https://www.google.com/maps?q='+gp.lat.toFixed(6)+','+gp.lon.toFixed(6)+'" target="_blank" rel="noopener">Googleマップで現在地を開く ↗</a>';
-    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位磁石の赤い針が北、上の▼がスマホの向き (使えない時は移動方向)。盤の小さい▲が記録地点の方向。<br>速度アラーム: 設定速度を超えるとキンコン音。◀▶ (または −/＋) で 30〜120 km/h を 5 km/h ごとに設定、▲でオン ▼でオフ。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
+    body+='<div class="note">= で開始/停止 ・ + でここを記録 ・ CLR で閉じる (GPS も止まります)。方位磁石の赤い針が北、上の▼がスマホの向き (使えない時は移動方向)。盤の小さい▲が記録地点の方向。<br>速度アラーム: 設定速度を超えるとキンコン音 (GPS の信号がない時・精度が悪い時は鳴りません)。◀▶ (または −/＋) で 30〜120 km/h を 5 km/h ごとに設定、▲でオン ▼でオフ。<br>高度は GPS の値 (楕円体高) のため、地図の標高より 30〜40 m ほど高く出ることがあります。</div>';
   } else if(S.mode==='sw'&&S.swm==='tm'){
     var tt=S.tm, rm=tmRem();
     top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
