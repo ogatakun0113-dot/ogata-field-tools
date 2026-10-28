@@ -204,6 +204,10 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .txr{display:flex;justify-content:space-between;gap:8px;padding:1px 4px;font:600 12px/1.5 var(--f-ui);flex-wrap:wrap}
 .txr b{font:700 clamp(15px,2.5vh,19px)/1.3 var(--f-lcd);margin-left:4px}
 .row.big .v{font-size:clamp(22px,3.8vh,30px)!important}
+.ptrow{display:flex;align-items:center;gap:8px;padding:2px 4px;font:600 11px/1.4 var(--f-ui);color:var(--lcd-dim)}
+.ptrow span{flex:1;min-width:0}
+.ptrow a{color:var(--lcd-ink);font-weight:700}
+.ptrow button{all:unset;cursor:pointer;padding:5px 8px;border-radius:6px;background:var(--lcd-inv);color:var(--lcd);font:700 12px/1 var(--f-ui)}
 .swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
 .swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
 .swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
@@ -1027,7 +1031,7 @@ function render(){
     body+='<div class="rows">'
       +'<div class="row static"><span class="l">緯度</span><span class="v">'+(gp?gp.lat.toFixed(6)+'  '+dms(gp.lat,'N','S'):'--')+'</span></div>'
       +'<div class="row static"><span class="l">経度</span><span class="v">'+(gp?gp.lon.toFixed(6)+'  '+dms(gp.lon,'E','W'):'--')+'</span></div>'
-      +(S.gps.pt?'<div class="row static strong"><span class="l">記録地点まで</span><span class="v">'+(td===null?'--':fmtDist(td)+'  '+Math.round(tb)+'° '+DIRJ[dir16(tb)])+'</span></div>':'')
+      +(S.gps.pt?'<div class="row static strong"><span class="l">記録地点まで</span><span class="v">'+(td===null?'--':fmtDist(td)+'  '+Math.round(tb)+'° '+DIRJ[dir16(tb)])+'</span></div><div class="ptrow"><span>記録: '+S.gps.pt.lat.toFixed(5)+', '+S.gps.pt.lon.toFixed(5)+'</span><a href="https://www.google.com/maps?q='+S.gps.pt.lat.toFixed(6)+','+S.gps.pt.lon.toFixed(6)+'" target="_blank" rel="noopener">地図</a><button type="button" data-gps="clearpt">記録を消す</button></div>':'')
       +'</div>';
     body+='<div class="swb"><button type="button" data-gps="go" class="'+(on?'stop':'go')+'">'+(on?'GPS 停止':'GPS 開始')+'</button><button type="button" data-gps="reset">距離リセット</button></div>';
     body+='<div class="swb"><button type="button" data-gps="mark"'+(gp?'':' disabled')+'>ここを記録</button><button type="button" data-gps="copy"'+(gp?'':' disabled')+'>座標コピー</button></div>';
@@ -1130,7 +1134,7 @@ function bind(){
   $('lcd').addEventListener('click',function(e){
     var sp2=e.target.closest('[data-spd]'); if(sp2){ buzz(); audioPrep(); var sv=sp2.getAttribute('data-spd'); if(sv==='tg'){ S.set.spdOn=!S.set.spdOn; if(!S.set.spdOn){ spdOver=false; chimeStop(); } else { kinkon(); } } else { spdAdj(+sv); if(S.set.spdOn) kinkon(); } render(); save(); return; }
     var gb=e.target.closest('[data-gps]'); if(gb){ buzz(); var ga=gb.getAttribute('data-gps');
-      if(ga==='go'){ if(G.watch!==null) gpsOff(); else gpsOn(); } else if(ga==='reset') gpsReset(); else if(ga==='mark') gpsMark();
+      if(ga==='go'){ if(G.watch!==null) gpsOff(); else gpsOn(); } else if(ga==='reset') gpsReset(); else if(ga==='mark') gpsMark(); else if(ga==='clearpt') S.gps.pt=null;
       else if(ga==='copy'&&G.pos){ var txt=G.pos.lat.toFixed(6)+','+G.pos.lon.toFixed(6); try{ navigator.clipboard.writeText(txt).then(function(){ gb.textContent='コピーしました'; },function(){ gb.textContent=txt; }); }catch(er){ gb.textContent=txt; } save(); return; }
       render(); save(); return; }
     var sm=e.target.closest('[data-swm]'); if(sm){ buzz(); S.swm=sm.getAttribute('data-swm'); render(); save(); return; }
