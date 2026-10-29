@@ -436,8 +436,8 @@ var SHI='子丑寅卯辰巳午未申酉戌亥', SHIY=['ね','うし','とら','�
 function eraName(n,y){ return n+(y===1?'元':y)+'年'; }
 var TOOLS={
  era:{name:'年号・西暦・干支',start:'y',fields:[
-   {k:'md',label:'入力',type:'opt',opts:['西暦','明治','大正','昭和','平成','令和','干支'],fmt:function(x){return x==='干支'?'十二支から探す':x;},def:'西暦'},
-   {k:'y',label:'年',unit:'年',def:String(new Date().getFullYear()),show:function(v){return v.md!=='干支';}},
+   {k:'md',label:'入力',type:'opt',opts:['西暦','明治','大正','昭和','平成','令和','満年齢','干支'],fmt:function(x){return x==='干支'?'十二支から探す':(x==='満年齢'?'満年齢から':x);},def:'西暦'},
+   {k:'y',label:'年',unit:function(v){return v.md==='満年齢'?'歳':'年';},def:String(new Date().getFullYear()),show:function(v){return v.md!=='干支';}},
    {k:'z',label:'十二支',type:'opt',opts:SHI.split(''),fmt:function(x){var i=SHI.indexOf(x);return x+' ('+SHIA[i]+')';},def:'子',show:function(v){return v.md==='干支';}}],
   calc:function(v){
    var now=new Date().getFullYear();
@@ -447,13 +447,18 @@ var TOOLS={
    }
    var n=Math.round(N(v,'y')); if(!isFinite(n)) return {warn:'年を入力してください'};
    var Y, warn='';
-   if(v.md==='西暦') Y=n;
+   var ageRows=null;
+   if(v.md==='満年齢'){ if(n<0||n>130) return {warn:'0〜130 歳で入力してください'}; Y=now-n;
+     var wa=function(y){ var h=ERAS.filter(function(x){return y>=x.s&&y<=x.e;}).map(function(x){return eraName(x.n,y-x.s+1);}).join('/'); return y+'年'+(h?' ('+h+')':''); };
+     ageRows=[R('誕生日後なら',wa(Y)),R('誕生日前なら',wa(Y-1))]; }
+   else if(v.md==='西暦') Y=n;
    else { var E=ERAS.filter(function(x){return x.n===v.md;})[0]; if(n<1) return {warn:'1 以上を入力してください'}; Y=E.s+n-1; if(Y>E.e) warn=v.md+'は '+(E.e-E.s+1)+' 年までです (計算上は西暦 '+Y+' 年)'; }
    var hit=ERAS.filter(function(x){return Y>=x.s&&Y<=x.e;});
    var wk=hit.length?hit.map(function(x){ return eraName(x.n,Y-x.s+1)+(hit.length>1?(x.e===Y&&x.ed?' ('+x.ed+'まで)':(x.s===Y&&x.sd?' ('+x.sd+'から)':'')):''); }).join(' / '):(Y<1868?'明治より前':'—');
    var g=((Y-4)%10+10)%10, z=((Y-4)%12+12)%12;
-   var rows=[R('西暦',Y+' 年',1),R('和暦',wk,1),R('干支',KAN[g]+SHI[z]+' ('+KANY[g]+SHIY[z]+')'),R('十二支',SHI[z]+' ・ '+SHIA[z]+'年')];
-   if(Y<=now){ rows.push(R('満年齢 (今年の誕生日後)',(now-Y)+' 歳')); rows.push(R('数え年',(now-Y+1)+' 歳')); rows.push(R('今年まで',(now-Y)+' 年')); }
+   var rows=(ageRows||[]).concat([R('西暦',Y+' 年',!ageRows),R('和暦',wk,!ageRows),R('干支',KAN[g]+SHI[z]+' ('+KANY[g]+SHIY[z]+')'),R('十二支',SHI[z]+' ・ '+SHIA[z]+'年')]);
+   if(ageRows){ rows.push(R('数え年',(n+1)+' 歳')); }
+   else if(Y<=now){ rows.push(R('満年齢 (今年の誕生日後)',(now-Y)+' 歳')); rows.push(R('数え年',(now-Y+1)+' 歳')); rows.push(R('今年まで',(now-Y)+' 年')); }
    else rows.push(R('今年から',(Y-now)+' 年後'));
    var same=[]; for(var k=-2;k<=2;k++){ if(k) same.push(Y+12*k); } rows.push(R('同じ十二支の年',same.join('・')));
    return {rows:rows,warn:warn||undefined,note:'改元の年は2つの和暦が並びます。干支は1月1日で切り替え (暦の上では立春で切り替える数え方もあります)。'};
