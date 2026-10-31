@@ -208,6 +208,7 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .ptrow span{flex:1;min-width:0}
 .ptrow a{color:var(--lcd-ink);font-weight:700}
 .ptrow button{all:unset;cursor:pointer;padding:5px 8px;border-radius:6px;background:var(--lcd-inv);color:var(--lcd);font:700 12px/1 var(--f-ui)}
+.stp{opacity:.55;font-size:.7em}
 .swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
 .swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
 .swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
@@ -437,7 +438,7 @@ function eraName(n,y){ return n+(y===1?'元':y)+'年'; }
 var TOOLS={
  era:{name:'年号・西暦・干支',start:'y',fields:[
    {k:'md',label:'入力',type:'opt',opts:['西暦','明治','大正','昭和','平成','令和','満年齢','干支'],fmt:function(x){return x==='干支'?'十二支から探す':(x==='満年齢'?'満年齢から':x);},def:'西暦'},
-   {k:'y',label:'年',unit:function(v){return v.md==='満年齢'?'歳':'年';},def:String(new Date().getFullYear()),show:function(v){return v.md!=='干支';}},
+   {k:'y',label:'年',step:1,min:function(v){return v.md==='西暦'?1:(v.md==='満年齢'?0:1);},unit:function(v){return v.md==='満年齢'?'歳':'年';},def:String(new Date().getFullYear()),show:function(v){return v.md!=='干支';}},
    {k:'z',label:'十二支',type:'opt',opts:SHI.split(''),fmt:function(x){var i=SHI.indexOf(x);return x+' ('+SHIA[i]+')';},def:'子',show:function(v){return v.md==='干支';}}],
   calc:function(v){
    var now=new Date().getFullYear();
@@ -762,6 +763,7 @@ function leftRight(d){
   if(S.mode==='tool'){
     var f=curField(), v=tv(S.tool);
     if(f.type==='opt'){ var o=optsOf(f,v), i=o.indexOf(v[f.k]); setV(f,o[(i+d+o.length)%o.length]); return; }
+    if(f.step){ var cv=N(v,f.k); if(!isFinite(cv)) cv=+f.def||0; var nv=cv+d*f.step; if(typeof f.min==='function'?nv<f.min(v):(f.min!==undefined&&nv<f.min)) return; setV(f,String(Math.round(nv*1e6)/1e6)); S.fresh=true; return; }
     if(f.presets){ var ps=typeof f.presets==='function'?f.presets(v):f.presets, cur=N(v,f.k), j=-1; for(var k=0;k<ps.length;k++){ if(Math.abs(+ps[k]-cur)<1e-9){j=k;break;} }
       j = j<0 ? 0 : (j+d+ps.length)%ps.length; setV(f,ps[j]); S.fresh=true; }
     return;
@@ -1108,7 +1110,7 @@ function render(){
     var F=function(f,i){
       var val=v[f.k], disp;
       if(f.type==='opt'){ disp='<span class="opt">'+(f.col?'<span class="sw" style="background:'+COL[val].h+'"></span>':'')+esc(f.fmt?f.fmt(val):val)+'</span>'; }
-      else disp=esc(val===''?'—':String(val).replace(/(^|[^\d])\.(?=\d)/g,'$10.'))+(i===S.field&&!S.fresh?'<span class="cursor"></span>':'')+(f.unit?' '+esc(typeof f.unit==='function'?f.unit(v):f.unit):'');
+      else disp=(f.step?'<span class="stp">◀ </span>':'')+esc(val===''?'—':String(val).replace(/(^|[^\d])\.(?=\d)/g,'$10.'))+(i===S.field&&!S.fresh?'<span class="cursor"></span>':'')+(f.unit?' '+esc(typeof f.unit==='function'?f.unit(v):f.unit):'')+(f.step?'<span class="stp"> ▶</span>':'');
       return '<div class="fld'+(i===S.field?' act':'')+'" data-f="'+i+'"><span class="l">'+esc(f.label)+'</span><span class="v">'+disp+'</span></div>';
     };
     if(T.layout){ body+=T.layout(v,fs,F); body+='<div class="note">▲▼/= 項目移動 ・ ◀▶ 選択肢・プリセット ・ CLR で欄を消去</div>'; }
