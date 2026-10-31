@@ -209,6 +209,8 @@ body{background:var(--room);color:var(--fg);font-family:var(--f-ui);margin:0;ove
 .ptrow a{color:var(--lcd-ink);font-weight:700}
 .ptrow button{all:unset;cursor:pointer;padding:5px 8px;border-radius:6px;background:var(--lcd-inv);color:var(--lcd);font:700 12px/1 var(--f-ui)}
 .stp{opacity:.55;font-size:.7em}
+.dsel{background:var(--lcd-inv);color:var(--lcd);border-radius:2px;padding:0 1px;box-shadow:0 3px 0 var(--lcd-ink)}
+.dpad{opacity:.45}
 .swtab{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin:2px 0 2px;background:rgba(29,42,27,.15);border-radius:8px;padding:3px}
 .swtab button{all:unset;cursor:pointer;text-align:center;padding:7px 0;border-radius:6px;font:700 13px/1 var(--f-ui);color:var(--lcd-ink)}
 .swtab button.on{background:var(--lcd-inv);color:var(--lcd)}
@@ -753,7 +755,8 @@ function upDown(d){
     if(b&&d<0&&S.field===0&&b.scrollTop>0){ b.scrollTop=0; S.noScroll=true; return; }
     S.field=(S.field+d+n)%n; S.fresh=true; return; }
   if(S.mode==='list'){ S.sel=(S.sel+d+TLIST.length)%TLIST.length; return; }
-  if(S.mode==='conv'){ var g=RF.indexOf(S.unit)>=0?RF:TX, i=g.indexOf(S.unit); S.unit=g[(i+d+g.length)%g.length]; return; }
+  if(S.mode==='conv'&&RF.indexOf(S.unit)>=0){ digStep(-d); return; }
+  if(S.mode==='conv'){ var g=TX, i=g.indexOf(S.unit); S.unit=g[(i+d+g.length)%g.length]; return; }
   if(!S.hist.length) return;
   var hi=S.hi+(d<0?1:-1); if(hi<0){ S.hi=-1; S.entry=[]; S.justEval=false; return; }
   if(hi>=S.hist.length) hi=S.hist.length-1;
@@ -768,7 +771,27 @@ function leftRight(d){
       j = j<0 ? 0 : (j+d+ps.length)%ps.length; setV(f,ps[j]); S.fresh=true; }
     return;
   }
-  if(S.mode==='conv'){ if(RF.indexOf(S.unit)>=0) toggleImp(); else cycleTx(d); }
+  if(S.mode==='conv'){ if(RF.indexOf(S.unit)>=0) digMove(-d); else cycleTx(d); }
+}
+var DIGLIM={dBm:[-2,2],dBuV:[-2,2],W:[-4,3],mW:[-3,3]};
+function curDig(){ if(!S.digs) S.digs={dBm:-1,dBuV:-1,W:-2,mW:-1}; var d=S.digs[S.unit]; return d===undefined?-1:d; }
+function digMove(d){ var L=DIGLIM[S.unit]||[-2,2]; S.digs[S.unit]=Math.max(L[0],Math.min(L[1],curDig()+d)); curDig(); }
+function digStep(d){
+  var dg=curDig(), st=Math.pow(10,dg), es=entryStr(), x=entryVal(); if(!isFinite(x)) x=0;
+  var m=es.match(/^-?\d*\.(\d+)$/), cd=m?m[1].length:0, dec=Math.max(cd,-dg,0);
+  var nx=x+d*st; if((S.unit==='W'||S.unit==='mW')&&nx<0) nx=0;
+  S.entry=pieces(nx.toFixed(dec)); S.justEval=false;
+}
+function digHtml(){
+  var s2=entryStr(), dg=curDig();
+  if(!/^-?\d*\.?\d*$/.test(s2)||s2===''||s2==='-') return esc(s2)+'<span class="cursor"></span>';
+  var neg=s2.charAt(0)==='-'; if(neg) s2=s2.slice(1);
+  var parts=s2.split('.'), ip=parts[0]||'', fp=parts.length>1?parts[1]:null, h='';
+  var ipad=ip, lead=0; if(dg>=0&&ip.length<=dg){ lead=dg+1-ip.length; ipad=new Array(lead+1).join('0')+ip; } if(ipad==='') { ipad='0'; lead=1; }
+  for(var i=0;i<ipad.length;i++){ var pos=ipad.length-1-i, ch=ipad[i], dim=i<lead; h+=(pos===dg?'<span class="dsel">'+ch+'</span>':(dim?'<span class="dpad">'+ch+'</span>':ch)); }
+  if(fp!==null||dg<0){ var fl=fp===null?0:fp.length, need=Math.max(fl,-dg); h+=(fp===null?'<span class="dpad">.</span>':'.');
+    for(var j=1;j<=need;j++){ var ch2=j<=fl?fp[j-1]:'0', pad=j>fl; h+=(-j===dg?'<span class="dsel">'+ch2+'</span>':(pad?'<span class="dpad">'+ch2+'</span>':ch2)); } }
+  return (neg?'-':'')+h+'<span class="cursor"></span>';
 }
 function toggleImp(){ S.set.imp=S.set.imp===50?75:50; }
 function cycleTx(d){ var i=TXORDER.indexOf(S.set.tx); S.set.tx=TXORDER[(i+d+3)%3]; }
@@ -1046,9 +1069,9 @@ function render(){
     else body+='<div class="hint">数値を入れて <b>単位キー</b> (dBm・W・伝送値 など) を押すと、関連する値をまとめて換算します。<br><b>TOOL</b> で電圧降下・回線設計などの計算、<b>⚙設定</b> で詳細設定。<br>普通の計算は <b>=</b> で。</div><div class="result">0</div>';
   } else if(S.mode==='conv'){
     var isRF=RF.indexOf(S.unit)>=0;
-    top+='<span>'+(isRF?'RF':'伝送')+' 換算</span><span class="grow"></span><span>▲▼単位 ◀▶'+(isRF?'Ω':'種別')+'</span>';
+    top+='<span>'+(isRF?'RF':'伝送')+' 換算</span><span class="grow"></span><span>'+(isRF?'◀▶桁 ▲▼増減 (桁 '+(function(){var g=curDig();return g>=0?String(Math.pow(10,g)):Math.pow(10,g).toFixed(-g);})()+')':'▲▼単位 ◀▶種別')+'</span>';
     var x=entryVal(), res=isFinite(x)?(isRF?rfCalc(S.unit,x):txCalc(S.unit,x)):null;
-    body+='<div class="convin"><div class="entry">'+esc(entryStr())+'<span class="cursor"></span></div><span class="u">'+esc(UNAME[S.unit])+(S.unit==='TX'?' '+esc(TXT[S.set.tx].short):'')+'</span></div>';
+    body+='<div class="convin"><div class="entry">'+(isRF?digHtml():esc(entryStr())+'<span class="cursor"></span>')+'</div><span class="u">'+esc(UNAME[S.unit])+(S.unit==='TX'?' '+esc(TXT[S.set.tx].short):'')+'</span></div>';
     var rows=res?res.rows:(isRF?rfCalc('dBm',NaN):txCalc('PCT',NaN)).rows.map(function(r){return {l:r.l,v:'--',u:r.u};});
     body+='<div class="rows">'+rows.map(function(r,i){ return '<div class="row'+(r.u===S.unit?' me':'')+(r.u?'':' static')+'" data-row="'+i+'"><span class="l">'+esc(r.l)+'</span><span class="v">'+esc(r.v)+'</span></div>'; }).join('')+'</div>';
     if(res&&res.warn) body+='<div class="warn">'+esc(res.warn)+'</div>';
@@ -1152,7 +1175,7 @@ function renderBack(){
   h+='<div class="sec"><h3>表示・動作</h3><div class="fr"><span>計算結果の小数桁</span>'+seg('sDg',[['auto','自動'],['2','2'],['3','3'],['4','4']],s.digits)+'</div>';
   h+='<div class="fr"><span>キー押下で振動 (対応端末)</span>'+tg('tVib',s.vib,'振動')+'</div>';
   h+='<div class="fr"><span>閉じる直前の画面を起動時に復元</span>'+tg('tRes',s.restore,'復元')+'</div></div>';
-  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。▲▼で入力単位、◀▶で Ω / 伝送値種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>年号</b> : SHIFT＋指示値。明治〜令和と西暦の相互換算、干支・十二支、年齢。<br><b>消費税</b> : SHIFT＋割合% (または TOOL 一覧の 1 番)。税率 A (初期 8%)・B (初期 10%) の税額と、合計の税込金額。税率は変更可。<br><b>GPS</b> : SHIFT＋S/N (または TOOL 一覧)。速度・方位・高度・緯度経度・移動距離。「ここを記録」で、その地点までの距離と方向を表示。<br><b>ストップウォッチ・タイマー</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。上のタブか ◀▶ で切替。タイマーは数字キーで時間をセット。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
+  h+='<div class="sec"><h3>使い方</h3><div class="help"><b>換算</b> : 数値 → 単位キー。続けて数字を打つとその場で再計算。RF (dBm・dBμV・W) は ◀▶ で桁を選び ▲▼ でその桁を増減 (50/75Ω は SHIFT＋dBm)。伝送値は ▲▼ で入力単位、◀▶ で種別を切替。結果の行をタップするとその値が入力になります。<br><b>S/N</b> キー : 信号と雑音から S/N 比 (dB) を計算 (dB値・電圧・電力で入力可)。<br><b>TOOL</b> : S/N 比・VSWR・波長・同軸損失・回線設計・消費電力・電圧降下・バッテリー・オームの法則・面積・質量・カラー抵抗・コンデンサー・IPv4。項目の数値欄では 1.2×3 のような式も使えます。<br><b>年号</b> : SHIFT＋指示値。明治〜令和と西暦の相互換算、干支・十二支、年齢。<br><b>消費税</b> : SHIFT＋割合% (または TOOL 一覧の 1 番)。税率 A (初期 8%)・B (初期 10%) の税額と、合計の税込金額。税率は変更可。<br><b>GPS</b> : SHIFT＋S/N (または TOOL 一覧)。速度・方位・高度・緯度経度・移動距離。「ここを記録」で、その地点までの距離と方向を表示。<br><b>ストップウォッチ・タイマー</b> : SHIFT＋TOOL (または TOOL 一覧の最後)。上のタブか ◀▶ で切替。タイマーは数字キーで時間をセット。= でスタート/ストップ、+ でラップ、CLR でリセット。閉じても計測は続きます。<br><b>SHIFT</b> : キー上のオレンジ文字・右下の A〜F を使います。<b>SHIFT＋CLR</b> で全クリア。<br>パソコンではキーボード (数字・+−*/・Enter・Backspace・Esc) も使えます。</div></div>';
   h+='<div class="sec"><h3>リセット</h3><div class="fr"><span>計算履歴 ('+S.hist.length+' 件)</span><button type="button" class="btn ghost" id="bHist">履歴を消去</button></div>';
   h+='<div class="fr"><span>すべての設定とツールの入力値</span><button type="button" class="btn danger" id="bReset">'+(resetArm?'もう一度押すと初期化':'初期値に戻す')+'</button></div></div>';
   h+='<div class="plate">総合換算ツール電卓 V1<br>開発／制作 西菱電機フィールディング(株) 緒方</div>';
