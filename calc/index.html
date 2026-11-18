@@ -1053,7 +1053,7 @@ var wake=null;
 function wakeOn(){ try{ if(navigator.wakeLock&&!wake) navigator.wakeLock.request('screen').then(function(l){wake=l; l.addEventListener('release',function(){wake=null;});}).catch(function(){}); }catch(e){} }
 function wakeOff(){ try{ if(wake){ wake.release(); wake=null; } }catch(e){} }
 function openSw(){ if(S.mode!=='sw'&&S.mode!=='list') S.prev=S.mode; S.mode='sw'; if(S.sw.run||S.tm.run) wakeOn(); }
-function swToggle(){ var w=S.sw; if(w.run){ w.acc+=Date.now()-w.start; w.run=false; S.ans=w.acc/1000; wakeOff(); } else { w.start=Date.now(); w.run=true; wakeOn(); } }
+function swToggle(){ var w=S.sw; if(w.run){ w.acc+=Date.now()-w.start; w.run=false; S.ans=w.acc/1000; wakeOff(); } else { w.start=Date.now(); w.run=true; w.mk=Math.floor(w.acc/60000); audioPrep(); wakeOn(); } }
 function swLapReset(){ var w=S.sw; if(w.run){ var t=swEl(); w.laps.unshift(t); if(w.laps.length>99) w.laps.length=99; } else { w.acc=0; w.laps=[]; } }
 /* ---- GPS ---- */
 var G={watch:null,pos:null,err:'',last:null,hdgDev:null,lastT:0};
@@ -1217,6 +1217,7 @@ function swKey(k,sh){
   return false;
 }
 setInterval(function(){
+  if(S.sw.run){ var swe=swEl(), smk=Math.floor(swe/60000); if(S.sw.mk===undefined) S.sw.mk=smk; if(smk>S.sw.mk){ S.sw.mk=smk; if(S.swPon!==false) pon(); } }
   if(S.mode==='sw'&&S.swm==='sw'&&S.sw.run){ var el=$('swTime'); if(el) el.textContent=fmtT(swEl()); }
   if(gpsLost()&&(chimeT||spdOver||!G.lostShown)){ overCnt=0; spdOver=false; chimeStop(); if(!G.lostShown){ G.lostShown=true; if(S.mode==='gps') render(); } }
   if(!gpsLost()) G.lostShown=false;
@@ -1305,7 +1306,8 @@ function render(){
     if(w.laps.length){
       body+='<div class="rows">'+w.laps.map(function(t,i){ var prev=w.laps[i+1]||0; return '<div class="row static"><span class="l">ラップ '+(w.laps.length-i)+'　'+fmtT(t-prev)+'</span><span class="v">'+fmtT(t)+'</span></div>'; }).join('')+'</div>';
     }
-    body+='<div class="note">= キーでスタート/ストップ ・ + キーでラップ ・ CLR でリセット<br>アプリを閉じても計測は続きます。停止すると秒数 ('+fx(el/1000,2)+' 秒) が Ans に入ります。</div>';
+    body+='<div class="galm"><span class="gk">1分ごとに「ポーン」</span><button type="button" data-swpon="1" class="tgl">'+(S.swPon!==false?'ON':'OFF')+'</button></div>';
+    body+='<div class="note">= キーでスタート/ストップ ・ + キーでラップ ・ CLR でリセット<br>1:00・2:00… と1分たつごとに「ポーン」と鳴ります。<br>アプリを閉じても計測は続きます。停止すると秒数 ('+fx(el/1000,2)+' 秒) が Ans に入ります。</div>';
   } else if(S.mode==='tool'){
     var T=TOOLS[S.tool], v=tv(S.tool), fs=visFields(S.tool); curField();
     top+='<span>'+(T.noTitle?esc(T.name):'TOOL')+'</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 終了</button>';
@@ -1394,6 +1396,7 @@ function bind(){
     var rt=e.target.closest('[data-rtab]'); if(rt){ buzz(); openRtab(); render(); save(); return; }
     var tr=e.target.closest('[data-tbl]'); if(tr){ buzz(); S.tv.rtab.b=tr.getAttribute('data-tbl'); render(); save(); return; }
     var nb=e.target.closest('[data-net]'); if(nb){ buzz(); netRun(tv('net').h); return; }
+    var spb=e.target.closest('[data-swpon]'); if(spb){ buzz(); S.swPon=(S.swPon===false); if(S.swPon) pon(); render(); save(); return; }
     var pb=e.target.closest('[data-pon]'); if(pb){ buzz(); S.tmPon=(S.tmPon===false); if(S.tmPon) pon(); render(); save(); return; }
     var tp=e.target.closest('[data-tmp]'); if(tp){ buzz(); tmSet(+tp.getAttribute('data-tmp')*1000); render(); save(); return; }
     var sb=e.target.closest('[data-sw]'); if(sb){ buzz(); if(sb.getAttribute('data-sw')==='go') swToggle(); else swLapReset(); render(); save(); return; }
