@@ -1185,10 +1185,14 @@ function alarmStart(){
   ring(); alarmT=setInterval(ring,1200);
 }
 function alarmStop(){ if(alarmT){ clearInterval(alarmT); alarmT=null; } try{ if(navigator.vibrate) navigator.vibrate(0); }catch(e){} }
+function pon(){ audioPrep(); if(!actx) return; try{ var t0=actx.currentTime+0.02, o=actx.createOscillator(), o2=actx.createOscillator(), g=actx.createGain(), g2=actx.createGain();
+  o.type='sine'; o.frequency.value=880; o2.type='sine'; o2.frequency.value=1760; g2.gain.value=0.12;
+  g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.45,t0+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t0+1.6);
+  o.connect(g); o2.connect(g2); g2.connect(g); g.connect(actx.destination); o.start(t0); o2.start(t0); o.stop(t0+1.7); o2.stop(t0+1.7); }catch(e){} try{ if(navigator.vibrate) navigator.vibrate(60); }catch(e){} }
 function tmToggle(){
   var t=S.tm; alarmStop(); audioPrep();
   if(t.run){ t.remain=Math.max(0,t.end-Date.now()); t.run=false; wakeOff(); }
-  else { if(t.done||t.remain<=0){ t.remain=t.set; t.done=false; } if(t.remain>0){ t.end=Date.now()+t.remain; t.run=true; t.inp=''; wakeOn(); } }
+  else { if(t.done||t.remain<=0){ t.remain=t.set; t.done=false; } if(t.remain>0){ t.end=Date.now()+t.remain; t.run=true; t.inp=''; t.mk=Math.ceil(t.remain/60000); wakeOn(); } }
 }
 function tmReset(){ var t=S.tm; alarmStop(); if(t.run) return; if(t.done||t.remain!==t.set){ t.remain=t.set; t.done=false; } else { t.set=0; t.remain=0; } t.inp=''; }
 function tmSet(ms){ var t=S.tm; if(t.run) return; alarmStop(); t.set=ms; t.remain=ms; t.done=false; t.inp=''; }
@@ -1220,7 +1224,8 @@ setInterval(function(){
   var t=S.tm;
   if(t.run){
     if(Date.now()>=t.end){ t.run=false; t.remain=0; t.done=true; wakeOff(); if(S.mode!=='sw'){ S.prev=S.mode; } S.mode='sw'; S.swm='tm'; alarmStart(); render(); save(); }
-    else if(S.mode==='sw'&&S.swm==='tm'){ var e2=$('tmTime'); if(e2) e2.textContent=fmtTm(tmRem()); }
+    else { var rmn=tmRem(), mk=Math.ceil(rmn/60000); if(t.mk===undefined) t.mk=mk; if(mk<t.mk){ t.mk=mk; if(S.tmPon!==false&&rmn>500) pon(); }
+      if(S.mode==='sw'&&S.swm==='tm'){ var e2=$('tmTime'); if(e2) e2.textContent=fmtTm(rmn); } }
   }
 },100);
 
@@ -1288,7 +1293,8 @@ function render(){
     body+='<div class="swst">'+(tt.done?'時間です！':(tt.run?'カウントダウン中':(rm>0&&rm<tt.set?'一時停止中':(tt.set>0?'待機中 ・ セット '+fmtTm(tt.set):'数字キーで時間をセット'))))+'</div>';
     body+='<div class="swb"><button type="button" data-tm="go" class="'+(tt.run?'stop':'go')+'">'+(tt.run?'ストップ':(tt.done?'もう一度':(rm>0&&rm<tt.set?'再開':'スタート')))+'</button><button type="button" data-tm="reset">'+(tt.done||(!tt.run&&rm!==tt.set)?'リセット':'クリア')+'</button></div>';
     body+='<div class="tmp">'+[[60,'1分'],[180,'3分'],[300,'5分'],[600,'10分'],[1800,'30分'],[3600,'60分']].map(function(q){ return '<button type="button" data-tmp="'+q[0]+'"'+(tt.run?' disabled':'')+'>'+q[1]+'</button>'; }).join('')+'</div>';
-    body+='<div class="note">数字キーで時間をセット (例: 1 3 0 → 01:30、1 0 0 0 0 → 1:00:00)。= でスタート/ストップ、CLR でリセット。<br>アプリを開いている間は、0 になると音と振動でお知らせします。閉じている間は鳴りません (次に開いたとき表示します)。</div>';
+    body+='<div class="galm"><span class="gk">1分ごとに「ポーン」</span><button type="button" data-pon="1" class="tgl">'+(S.tmPon!==false?'ON':'OFF')+'</button></div>';
+    body+='<div class="note">数字キーで時間をセット (例: 1 3 0 → 01:30、1 0 0 0 0 → 1:00:00)。残り時間がちょうど ○分 になるたびに「ポーン」と鳴ります。= でスタート/ストップ、CLR でリセット。<br>アプリを開いている間は、0 になると音と振動でお知らせします。閉じている間は鳴りません (次に開いたとき表示します)。</div>';
   } else if(S.mode==='sw'){
     var w=S.sw, el=swEl();
     top+='<span>計時</span><span class="grow"></span><button class="lcd-x" type="button" data-x="1">✕ 閉じる</button>';
@@ -1388,6 +1394,7 @@ function bind(){
     var rt=e.target.closest('[data-rtab]'); if(rt){ buzz(); openRtab(); render(); save(); return; }
     var tr=e.target.closest('[data-tbl]'); if(tr){ buzz(); S.tv.rtab.b=tr.getAttribute('data-tbl'); render(); save(); return; }
     var nb=e.target.closest('[data-net]'); if(nb){ buzz(); netRun(tv('net').h); return; }
+    var pb=e.target.closest('[data-pon]'); if(pb){ buzz(); S.tmPon=(S.tmPon===false); if(S.tmPon) pon(); render(); save(); return; }
     var tp=e.target.closest('[data-tmp]'); if(tp){ buzz(); tmSet(+tp.getAttribute('data-tmp')*1000); render(); save(); return; }
     var sb=e.target.closest('[data-sw]'); if(sb){ buzz(); if(sb.getAttribute('data-sw')==='go') swToggle(); else swLapReset(); render(); save(); return; }
     var x=e.target.closest('[data-x]'); if(x){ if(S.mode==='gps') gpsOff(); if(S.mode==='list'){ S.mode=(S.prev&&S.prev!=='list')?S.prev:'calc'; if(S.mode==='tool'&&!TOOLS[S.tool]) S.mode='calc'; } else { S.mode='calc'; S.entry=[]; S.justEval=false; } render(); save(); return; }
